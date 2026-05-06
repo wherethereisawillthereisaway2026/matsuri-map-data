@@ -1387,13 +1387,11 @@ function createMarkerForPoint(p) {
     if (p._readonly) {
       var roDiv = document.createElement('div');
       roDiv.style.cssText = 'line-height:1.7;min-width:200px;max-width:250px;font-size:13px;';
-      var roLink = p.officialUrl ? p.officialUrl : ('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.name + ' ' + p.pref));
-      var roTypeLabel = p.category === 2 ? '🎆 花火' : '🏮 祭り';
+      var roMapLink = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.name + ' ' + (p.pref||''));
       roDiv.innerHTML =
-        "<a href='" + roLink + "' target='_blank' style='color:#1a73e8;font-size:14px;font-weight:bold;text-decoration:none;'>" + (p.name||'') + "</a>"
+        "<a href='" + roMapLink + "' target='_blank' style='color:#1a73e8;font-size:14px;font-weight:bold;text-decoration:none;'>" + (p.name||'') + "</a>"
         + "<br><span style='color:#888;font-size:12px;'>📍 " + (p.pref||'') + " " + (p.city||p.adr||'') + (p.venue ? ' ' + p.venue : '') + "</span>"
         + (p.date_start ? "<br><span style='font-size:12px;'>📅 " + p.date_start + (p.date_end && p.date_end !== p.date_start ? " 〜 " + p.date_end : '') + "</span>" : '')
-        + "<br><span style='font-size:11px;color:#aaa;'>" + roTypeLabel + " " + (p.month||'') + "月 (" + (p.source||'') + ")</span>"
         + (p.overview ? "<br><span style='font-size:12px;color:#555;'>" + p.overview + "</span>" : '')
         + (p.officialUrl ? "<br><a href='" + p.officialUrl + "' target='_blank' style='font-size:12px;color:#1a73e8;'>公式ページ</a>" : '')
         + (p.wiki_url ? " <a href='" + p.wiki_url + "' target='_blank' style='font-size:12px;color:#1a73e8;'>Wikipedia</a>" : '');
@@ -1453,7 +1451,7 @@ function createMarkerForPoint(p) {
     var urlVal  = (p.officialUrl || '').replace(/'/g, "&#39;").replace(/"/g, "&quot;");
     var rowIdx  = p.rowIndex;
 
-    var titleLink = p.placeId ? getMapUrl(p) : (p.officialUrl || getMapUrl(p));
+    var titleLink = getMapUrl(p);
 
     var div = document.createElement('div');
     div.style.cssText = 'line-height:1.7;min-width:220px;max-width:260px;font-size:13px;';
