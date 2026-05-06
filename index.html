@@ -1387,7 +1387,7 @@ function createMarkerForPoint(p) {
     if (p._readonly) {
       var roDiv = document.createElement('div');
       roDiv.style.cssText = 'line-height:1.7;min-width:200px;max-width:250px;font-size:13px;';
-      var roMapLink = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.name + ' ' + (p.pref||''));
+      var roMapLink = getMapUrl(p);
       roDiv.innerHTML =
         "<a href='" + roMapLink + "' target='_blank' style='color:#1a73e8;font-size:14px;font-weight:bold;text-decoration:none;'>" + (p.name||'') + "</a>"
         + "<br><span style='color:#888;font-size:12px;'>📍 " + (p.pref||'') + " " + (p.city||p.adr||'') + (p.venue ? ' ' + p.venue : '') + "</span>"
