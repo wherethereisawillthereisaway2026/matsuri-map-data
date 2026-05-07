@@ -332,8 +332,8 @@ function getMarkerIcon(code) {
 }
 
 function isVisible(code, month) {
-  if (code === 1) return matsuriOn && (activeMonths.size === 0 || activeMonths.has(month));
-  if (code === 2) return hanabiOn && (activeMonths.size === 0 || activeMonths.has(month));
+  if (code === 1) return matsuriOn && activeMonths.has(month);
+  if (code === 2) return hanabiOn && activeMonths.has(month);
   if (activeNat.has(code)) return true;
   if (activeHis.has(code)) return true;
   if (activeSat.has(code)) return true;
@@ -363,7 +363,7 @@ function buildPanel() {
   pcSelAllBtn.textContent = '全選択';
 
   function pcIsAllSelected() {
-    return matsuriOn && hanabiOn && activeMonths.size===0
+    return matsuriOn && hanabiOn && activeMonths.size===12
       && NAT_CATS.every(function(c){ return activeNat.has(c.code); })
       && HIS_CATS.every(function(c){ return activeHis.has(c.code); })
       && SAT_CATS.every(function(c){ return activeSat.has(c.code); })
@@ -381,7 +381,7 @@ function buildPanel() {
       activeMonths.clear(); activeNat.clear(); activeHis.clear(); activeSat.clear(); activeHana.clear();
       matsuriOn=false; hanabiOn=false;
     } else {
-      activeMonths.clear();
+      for(var i=1;i<=12;i++) activeMonths.add(i);
       matsuriOn=true; hanabiOn=true;
       NAT_CATS.forEach(function(c){ activeNat.add(c.code); });
       HIS_CATS.forEach(function(c){ activeHis.add(c.code); });
@@ -473,7 +473,7 @@ function buildPanel() {
   function pcRenderBody() {
     bodyWrap.innerHTML = '';
 
-    var allMH = matsuriOn && hanabiOn && activeMonths.size===0;
+    var allMH = matsuriOn && hanabiOn && activeMonths.size===12;
 
     function makeMonthRow(labelEl, months, cls) {
       var sec = document.createElement('div');
@@ -487,7 +487,7 @@ function buildPanel() {
         btn.textContent = mo + '月';
         btn.addEventListener('click', function() {
           if (activeMonths.has(mo)) {
-            activeMonths.delete(mo); // 選択解除（size===0になったらフィルターなし=全月表示）
+            activeMonths.delete(mo); // 選択解除
           } else {
             activeMonths.clear();
             activeMonths.add(mo); // 排他選択
@@ -503,11 +503,11 @@ function buildPanel() {
     sa1.className = 'fp-sel' + (allMH ? ' on' : '');
     sa1.textContent = '全選択';
     sa1.addEventListener('click', function() {
-      if (matsuriOn && hanabiOn && activeMonths.size===0) {
+      if (matsuriOn && hanabiOn && activeMonths.size===12) {
         matsuriOn=false; hanabiOn=false; activeMonths.clear();
       } else {
         matsuriOn=true; hanabiOn=true;
-        activeMonths.clear();
+        for(var i=1;i<=12;i++) activeMonths.add(i);
       }
       pcUpdateSelAll(); pcRenderBody(); updateMarkers();
     });
@@ -763,8 +763,7 @@ function loadFilterState() {
     if (!s) return false;
     matsuriOn = !!s.matsuriOn;
     hanabiOn = !!s.hanabiOn;
-    var months = s.months || [];
-    activeMonths = new Set(months.length === 12 ? [] : months); // 全12ヶ月保存=旧フォーマット→フィルターなしに変換
+    activeMonths = new Set(s.months || []);
     activeNat = new Set(s.nat || []);
     activeHis = new Set(s.his || []);
     activeSat = new Set(s.sat || []);
@@ -997,19 +996,19 @@ function initMap() {
           var hdr = document.createElement('div'); hdr.className = 'bs-sec-header';
           var lbl = document.createElement('div'); lbl.className = 'bs-sec-label'; lbl.textContent = '祭り・花火';
           var sa = document.createElement('div');
-          sa.className = 'bs-selall' + (matsuriOn && hanabiOn && activeMonths.size === 0 ? ' active' : '');
+          sa.className = 'bs-selall' + (matsuriOn && hanabiOn && activeMonths.size === 12 ? ' active' : '');
           sa.textContent = '全選択';
           sa.addEventListener('click', function() {
-            var allOn = matsuriOn && hanabiOn && activeMonths.size === 0;
+            var allOn = matsuriOn && hanabiOn && activeMonths.size === 12;
             if (allOn) {
               matsuriOn = false; hanabiOn = false; activeMonths.clear();
               kmBtn.classList.remove('on'); khBtn.classList.remove('on');
             } else {
               matsuriOn = true; hanabiOn = true;
-              activeMonths.clear();
+              for(var m=1;m<=12;m++) activeMonths.add(m);
               kmBtn.classList.add('on'); khBtn.classList.add('on');
             }
-            sa.className = 'bs-selall' + (matsuriOn && hanabiOn && activeMonths.size===0 ? ' active' : '');
+            sa.className = 'bs-selall' + (matsuriOn && hanabiOn && activeMonths.size===12 ? ' active' : '');
             refreshMBtns(); updateMarkers();
           });
           hdr.appendChild(lbl); hdr.appendChild(sa); sec.appendChild(hdr);
@@ -1045,7 +1044,7 @@ function initMap() {
               setMBtnStyle(mb, mo);
               mb.addEventListener('click', function() {
                 if (activeMonths.has(mo)) {
-                  activeMonths.delete(mo); // 選択解除（size===0でフィルターなし=全月表示）
+                  activeMonths.delete(mo); // 選択解除
                 } else {
                   activeMonths.clear();
                   activeMonths.add(mo); // 排他選択
@@ -1230,7 +1229,7 @@ function initMap() {
   });
 
   function isAllSelected() {
-    return matsuriOn && hanabiOn && activeMonths.size===0
+    return matsuriOn && hanabiOn && activeMonths.size===12
       && NAT_CATS.every(function(c){ return activeNat.has(c.code); })
       && HIS_CATS.every(function(c){ return activeHis.has(c.code); })
       && SAT_CATS.every(function(c){ return activeSat.has(c.code); })
@@ -1242,7 +1241,7 @@ function initMap() {
       matsuriOn=false; hanabiOn=false;
       mSelAllBtn.className = 'm-selall-btn';
     } else {
-      activeMonths.clear();
+      for(var i=1;i<=12;i++) activeMonths.add(i);
       matsuriOn=true; hanabiOn=true;
       NAT_CATS.forEach(function(c){ activeNat.add(c.code); });
       HIS_CATS.forEach(function(c){ activeHis.add(c.code); });
@@ -1256,7 +1255,7 @@ function initMap() {
   function mRender() {
     menuBody.innerHTML = '';
 
-    var allMatHan = matsuriOn && hanabiOn && activeMonths.size===0;
+    var allMatHan = matsuriOn && hanabiOn && activeMonths.size===12;
 
     function makeMonthRow(labelEl, months, cls) {
       var sec = document.createElement('div');
@@ -1281,11 +1280,11 @@ function initMap() {
     sa1.className = 'm-label sel' + (allMatHan ? ' on' : '');
     sa1.textContent = '全選択';
     sa1.addEventListener('click', function() {
-      if (matsuriOn && hanabiOn && activeMonths.size===0) {
+      if (matsuriOn && hanabiOn && activeMonths.size===12) {
         matsuriOn=false; hanabiOn=false; activeMonths.clear();
       } else {
         matsuriOn=true; hanabiOn=true;
-        activeMonths.clear();
+        for(var i=1;i<=12;i++) activeMonths.add(i);
       }
       mRender(); updateMarkers();
     });
