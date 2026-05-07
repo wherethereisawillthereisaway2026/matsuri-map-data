@@ -1468,8 +1468,11 @@ function createMarkerForPoint(p) {
         + "<br><span style='color:#888;font-size:12px;'>📍 " + (p.pref||'') + " " + (p.city||p.adr||'') + (p.venue ? ' ' + p.venue : '') + "</span>"
         + (p.date_start ? "<br><span style='font-size:12px;'>📅 " + p.date_start + (p.date_end && p.date_end !== p.date_start ? " 〜 " + p.date_end : '') + "</span>" : '')
         + (p.overview ? "<br><span style='font-size:12px;color:#555;'>" + p.overview + "</span>" : '')
-        + (p.officialUrl ? "<br><a href='" + p.officialUrl + "' target='_blank' style='font-size:12px;color:#1a73e8;'>公式ページ</a>" : '')
-        + (p.wiki_url ? " <a href='" + p.wiki_url + "' target='_blank' style='font-size:12px;color:#1a73e8;'>Wikipedia</a>" : '');
+        + "<div style='margin-top:6px;display:flex;gap:10px;flex-wrap:wrap;font-size:12px;border-top:1px solid #eee;padding-top:5px;'>"
+        + (p.officialUrl ? "<a href='" + p.officialUrl + "' target='_blank' style='color:#1a73e8;'>公式ページ</a>" : '')
+        + "<a href='https://ja.wikipedia.org/wiki/Special:Search?search=" + encodeURIComponent(p.name||'') + "' target='_blank' style='color:#1a73e8;'>Wikipedia</a>"
+        + "<a href='https://www.google.com/search?q=" + encodeURIComponent((p.name||'') + ' ' + (p.pref||'')) + "' target='_blank' style='color:#1a73e8;'>G検索</a>"
+        + "</div>";
       infoWindow.setContent(roDiv);
       infoWindow.open(map, marker);
       return;
@@ -1540,7 +1543,6 @@ function createMarkerForPoint(p) {
       + (memoUrls.length ? '<br>' : '')
       + (extractedUrls.map(function(u){ return "<a href='" + u + "' target='_blank' class='popup-link' title='" + u + "'>外部リンク</a>"; }).join('<br>'))
       + (extractedUrls.length ? '<br>' : '')
-      + (p.officialUrl && p.officialUrl.trim() && titleLink !== p.officialUrl ? "<a href='" + p.officialUrl + "' target='_blank' class='popup-link' title='" + p.officialUrl + "'>公式ページ</a><br>" : "")
       + "<hr style='margin:6px 0;border:none;border-top:1px solid #eee;'>"
       + "<div id='cat-sel-wrap-" + rowIdx + "' style='display:none;margin-bottom:4px;'>"
       + "<select id='cat-sel-" + rowIdx + "' onchange='saveCategory(" + rowIdx + ")' style='width:100%;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:12px;'>" + catOptions + "</select>"
@@ -1549,6 +1551,11 @@ function createMarkerForPoint(p) {
       + "<div style='display:flex;gap:4px;'>"
       + "<button onclick='toggleMemo(" + rowIdx + ")' style='flex:1;padding:5px;background:#fff;color:#34a853;border:1.5px solid #34a853;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;'>📝 編集</button>"
       + "<button onclick='deletePin(" + rowIdx + ",this,\"" + (p.source||'') + "\")' style='flex:1;padding:5px;background:#fff;color:#ea4335;border:1.5px solid #ea4335;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;'>🗑 削除</button>"
+      + "</div>"
+      + "<div style='margin-top:6px;display:flex;gap:10px;flex-wrap:wrap;font-size:12px;border-top:1px solid #eee;padding-top:5px;'>"
+      + (p.officialUrl && p.officialUrl.trim() ? "<a href='" + p.officialUrl.replace(/'/g,"&#39;") + "' target='_blank' style='color:#1a73e8;'>公式ページ</a>" : "")
+      + "<a href='https://ja.wikipedia.org/wiki/Special:Search?search=" + encodeURIComponent(p.name) + "' target='_blank' style='color:#1a73e8;'>Wikipedia</a>"
+      + "<a href='https://www.google.com/search?q=" + encodeURIComponent(p.name + ' ' + p.pref) + "' target='_blank' style='color:#1a73e8;'>G検索</a>"
       + "</div>"
       + "<div id='memo-area-" + rowIdx + "' style='display:none;margin-top:4px;'>"
       + "<input type='text' id='url-" + rowIdx + "' placeholder='公式URL' value=\"" + urlVal + "\" style='width:100%;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:12px;box-sizing:border-box;margin-bottom:4px;'>"
