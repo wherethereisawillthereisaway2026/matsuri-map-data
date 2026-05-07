@@ -196,6 +196,7 @@ function _gasPost(payload) {
   }
 })();
 var map, infoWindow;
+var _locationEditMode = null;
 var activeMarkers = [];
 var markerPool = new Map();   // key: "source:rowIndex" → marker（差分更新用プール）
 var searchMarkers = [];
@@ -824,6 +825,25 @@ function initMap() {
 
   // マップクリック：POI追加ポップアップ
   map.addListener('click', function(e) {
+    // 位置情報ピックアップモード中はinfoWindowを閉じず座標を取得
+    if (_locationEditMode !== null) {
+      var rowIdx = _locationEditMode;
+      var latInput = document.getElementById('loc-lat-' + rowIdx);
+      var lngInput = document.getElementById('loc-lng-' + rowIdx);
+      var pidInput = document.getElementById('loc-pid-' + rowIdx);
+      if (latInput) latInput.value = e.latLng.lat().toFixed(6);
+      if (lngInput) lngInput.value = e.latLng.lng().toFixed(6);
+      if (e.placeId) {
+        e.stop();
+        if (pidInput) pidInput.value = e.placeId;
+      } else {
+        if (pidInput) pidInput.value = '';
+      }
+      _locationEditMode = null;
+      var pickBtn = document.getElementById('locpick-btn-' + rowIdx);
+      if (pickBtn) { pickBtn.textContent = '📍 地図でピックアップ'; pickBtn.style.background = '#4285f4'; }
+      return;
+    }
     infoWindow.close();
     searchMarkers.forEach(function(m) { m.setMap(null); });
     searchMarkers = [];
@@ -1525,7 +1545,9 @@ function createMarkerForPoint(p) {
     var cleanMemo = memoRaw.replace(/(https?:\/\/[^\s]+)/g, '').trim();
     var memoVal = cleanMemo.replace(/'/g, "&#39;");
     var urlVal  = (p.officialUrl || '').replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+    var pidVal  = (p.placeId || '').replace(/"/g, "&quot;");
     var rowIdx  = p.rowIndex;
+    var isFESDB = !p.source;
 
     var titleLink = getMapUrl(p);
 
@@ -1558,7 +1580,20 @@ function createMarkerForPoint(p) {
       + "<div id='memo-area-" + rowIdx + "' style='display:none;margin-top:4px;'>"
       + "<input type='text' id='url-" + rowIdx + "' placeholder='公式URL' value=\"" + urlVal + "\" style='width:100%;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:12px;box-sizing:border-box;margin-bottom:4px;'>"
       + "<textarea id='memo-" + rowIdx + "' rows='2' style='width:100%;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:12px;box-sizing:border-box;resize:vertical;'>" + memoVal + "</textarea>"
-      + "<button id='savememo-btn-" + rowIdx + "' onclick='saveMemo(" + rowIdx + ")' style='width:100%;padding:5px;background:#34a853;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;'>保存</button>"
+      + "<button id='savememo-btn-" + rowIdx + "' onclick='saveMemo(" + rowIdx + ")' style='width:100%;padding:5px;background:#34a853;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;margin-bottom:6px;'>保存</button>"
+      + (isFESDB
+        ? "<hr style='margin:4px 0 6px;border:none;border-top:1px solid #eee;'>"
+          + "<div style='font-size:11px;color:#888;margin-bottom:4px;'>📌 位置情報（PlaceIDまたは緯度経度）</div>"
+          + "<input type='text' id='loc-pid-" + rowIdx + "' placeholder='Place ID（例: ChIJ...）' value=\"" + pidVal + "\" style='width:100%;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box;margin-bottom:4px;'>"
+          + "<div style='display:flex;gap:4px;margin-bottom:4px;'>"
+          + "<input type='text' id='loc-lat-" + rowIdx + "' placeholder='緯度' value=\"" + (p.lat||'') + "\" style='flex:1;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box;'>"
+          + "<input type='text' id='loc-lng-" + rowIdx + "' placeholder='経度' value=\"" + (p.lng||'') + "\" style='flex:1;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box;'>"
+          + "</div>"
+          + "<div style='display:flex;gap:4px;'>"
+          + "<button id='locpick-btn-" + rowIdx + "' onclick='toggleLocationPick(" + rowIdx + ")' style='flex:1;padding:5px;background:#4285f4;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px;'>📍 地図でピックアップ</button>"
+          + "<button id='saveloc-btn-" + rowIdx + "' onclick='saveLocation(" + rowIdx + ")' style='flex:1;padding:5px;background:#ff6d00;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px;'>位置を保存</button>"
+          + "</div>"
+        : "")
       + "</div>";
 
     infoWindow.setContent(div);
@@ -1690,6 +1725,48 @@ function toggleCatSel(rowIdx) {
 function toggleMemo(rowIdx) {
   var area = document.getElementById('memo-area-' + rowIdx);
   if (area) area.style.display = area.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleLocationPick(rowIdx) {
+  if (_locationEditMode === rowIdx) {
+    _locationEditMode = null;
+    var btn = document.getElementById('locpick-btn-' + rowIdx);
+    if (btn) { btn.textContent = '📍 地図でピックアップ'; btn.style.background = '#4285f4'; }
+  } else {
+    _locationEditMode = rowIdx;
+    var btn = document.getElementById('locpick-btn-' + rowIdx);
+    if (btn) { btn.textContent = '✕ キャンセル'; btn.style.background = '#ea4335'; }
+  }
+}
+
+function saveLocation(rowIdx) {
+  var pidInput = document.getElementById('loc-pid-' + rowIdx);
+  var latInput = document.getElementById('loc-lat-' + rowIdx);
+  var lngInput = document.getElementById('loc-lng-' + rowIdx);
+  var btn = document.getElementById('saveloc-btn-' + rowIdx);
+  if (!latInput || !lngInput) return;
+  var lat = parseFloat(latInput.value);
+  var lng = parseFloat(lngInput.value);
+  if (isNaN(lat) || isNaN(lng)) { alert('緯度・経度が無効です'); return; }
+  var placeId = pidInput ? pidInput.value.trim() : '';
+  if (btn) { btn.textContent = '保存中...'; btn.disabled = true; }
+  _gasPost({action: 'updateLocation', rowIndex: rowIdx, placeId: placeId, lat: lat, lng: lng})
+    .then(function(res) {
+      if (res.ok) {
+        allData.forEach(function(p) {
+          if (p.rowIndex === rowIdx && !p.source) { p.placeId = placeId; p.lat = lat; p.lng = lng; }
+        });
+        saveDataCache(allData);
+        if (btn) {
+          btn.textContent = '✓ 保存しました';
+          setTimeout(function() { btn.textContent = '位置を保存'; btn.disabled = false; }, 1500);
+        }
+      } else {
+        alert('保存に失敗しました: ' + (res.msg || ''));
+        if (btn) { btn.textContent = '位置を保存'; btn.disabled = false; }
+      }
+    })
+    .catch(function(e) { alert('エラー: ' + e); if (btn) { btn.textContent = '位置を保存'; btn.disabled = false; } });
 }
 
 function saveMemo(rowIdx) {
