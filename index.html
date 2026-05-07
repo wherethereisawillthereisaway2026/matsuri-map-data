@@ -486,8 +486,12 @@ function buildPanel() {
         btn.className = 'fp-btn' + (isOn ? ' on ' + cls : '');
         btn.textContent = mo + '月';
         btn.addEventListener('click', function() {
-          if (activeMonths.has(mo)) activeMonths.delete(mo);
-          else activeMonths.add(mo);
+          if (activeMonths.has(mo) && activeMonths.size === 1) {
+            for(var i=1;i<=12;i++) activeMonths.add(i); // その月だけON → 全月ONに戻す
+          } else {
+            activeMonths.clear();
+            activeMonths.add(mo); // 常にその月だけON（排他選択）
+          }
           pcUpdateSelAll(); pcRenderBody(); updateMarkers();
         });
         sec.appendChild(btn);
@@ -652,10 +656,65 @@ function saveMapState(lat, lng, zoom) {
 // 🔸 データキャッシュ（2時間TTL）
 var DATA_CACHE_KEY = 'fesMapData_v1';
 var DATA_CACHE_TTL = 7200000;
+var DELETED_CACHE_KEY = 'fesDeletedPins_v1';
+var DELETED_CACHE_TTL = 36 * 60 * 60 * 1000;
 
-function saveDataCache(data) {
+function getDeletedPinKey(p) {
+  if (!p) return '';
+  var source = p.source || '';
+  if (p.placeId) return source + ':pid:' + p.placeId;
+  return source + ':fallback:' + [p.name || '', p.pref || '', p.adr || '', p.lat || '', p.lng || ''].join('|');
+}
+
+function loadDeletedPins() {
   try {
-    localStorage.setItem(DATA_CACHE_KEY, JSON.stringify({ts: Date.now(), data: data}));
+    var raw = localStorage.getItem(DELETED_CACHE_KEY);
+    var obj = raw ? JSON.parse(raw) : {};
+    var now = Date.now();
+    var changed = false;
+    Object.keys(obj).forEach(function(key) {
+      if (!obj[key] || now - obj[key] > DELETED_CACHE_TTL) {
+        delete obj[key];
+        changed = true;
+      }
+    });
+    if (changed) localStorage.setItem(DELETED_CACHE_KEY, JSON.stringify(obj));
+    return obj;
+  } catch(e) { return {}; }
+}
+
+function markDeletedPin(p) {
+  var key = getDeletedPinKey(p);
+  if (!key) return;
+  try {
+    var obj = loadDeletedPins();
+    obj[key] = Date.now();
+    localStorage.setItem(DELETED_CACHE_KEY, JSON.stringify(obj));
+  } catch(e) {}
+}
+
+function unmarkDeletedPin(p) {
+  var key = getDeletedPinKey(p);
+  if (!key) return;
+  try {
+    var obj = loadDeletedPins();
+    delete obj[key];
+    localStorage.setItem(DELETED_CACHE_KEY, JSON.stringify(obj));
+  } catch(e) {}
+}
+
+function filterDeletedPins(data) {
+  if (!data || data.length === 0) return data;
+  var deleted = loadDeletedPins();
+  if (!deleted || Object.keys(deleted).length === 0) return data;
+  return data.filter(function(p) { return !deleted[getDeletedPinKey(p)]; });
+}
+
+function saveDataCache(data, writeProtect) {
+  try {
+    var entry = {ts: Date.now(), data: filterDeletedPins(data)};
+    if (writeProtect) entry.writeProtectedUntil = Date.now() + 5 * 60 * 1000;
+    localStorage.setItem(DATA_CACHE_KEY, JSON.stringify(entry));
   } catch(e) {}
 }
 
@@ -666,8 +725,17 @@ function loadDataCache() {
     var obj = JSON.parse(raw);
     if (!obj || !obj.data || !obj.ts) return null;
     if (Date.now() - obj.ts > DATA_CACHE_TTL) return null;
-    return obj.data;
+    return filterDeletedPins(obj.data);
   } catch(e) { return null; }
+}
+
+function isCacheWriteProtected() {
+  try {
+    var raw = localStorage.getItem(DATA_CACHE_KEY);
+    if (!raw) return false;
+    var obj = JSON.parse(raw);
+    return obj && obj.writeProtectedUntil && Date.now() < obj.writeProtectedUntil;
+  } catch(e) { return false; }
 }
 
 // 🔸 フィルター状態の保存・復元
@@ -975,9 +1043,13 @@ function initMap() {
               mb.textContent = mo + '月';
               setMBtnStyle(mb, mo);
               mb.addEventListener('click', function() {
-                if (activeMonths.has(mo)) activeMonths.delete(mo);
-                else activeMonths.add(mo);
-                setMBtnStyle(mb, mo); updateMarkers();
+                if (activeMonths.has(mo) && activeMonths.size === 1) {
+                  for(var i=1;i<=12;i++) activeMonths.add(i); // その月だけON → 全月ONに戻す
+                } else {
+                  activeMonths.clear();
+                  activeMonths.add(mo); // 常にその月だけON（排他選択）
+                }
+                refreshMBtns(); updateMarkers();
               });
               mBtns[mo] = mb; mgrid.appendChild(mb);
             })(m);
@@ -1336,13 +1408,17 @@ function initMap() {
   menuWrap.appendChild(mLinkRow);
   document.body.appendChild(menuWrap);
 
+  // ?nocache=1 でlocalStorageデータキャッシュを強制クリア
+  if (new URLSearchParams(window.location.search).get('nocache') === '1') {
+    try { localStorage.removeItem(DATA_CACHE_KEY); } catch(e) {}
+  }
   // キャッシュがあれば即座に表示（再読み込み時の体感速度改善）
   var _cached = loadDataCache();
   if (_cached) setupMarkers(_cached);
 
   // GitHubから最新データ取得（GASより高速）→ 失敗時はGASフォールバック
-  var _GH_DATA_URL   = 'https://raw.githubusercontent.com/wherethereisawillthereisaway2026/matsuri-map-data/main/data.json';
-  var _FES_SCHED_URL = 'https://raw.githubusercontent.com/wherethereisawillthereisaway2026/matsuri-map-data/main/fes_schedule.json';
+  var _GH_DATA_URL     = 'https://raw.githubusercontent.com/wherethereisawillthereisaway2026/matsuri-map-data/main/data.json';
+  var _FES_SCHED_URL   = 'https://raw.githubusercontent.com/wherethereisawillthereisaway2026/matsuri-map-data/main/fes_schedule.json';
 
   Promise.all([
     fetch(_GH_DATA_URL   + '?t=' + Date.now()).then(function(r){ if(!r.ok) throw new Error('main '+r.status); return r.json(); }),
@@ -1351,17 +1427,16 @@ function initMap() {
     var mainData = results[0];
     var fesData  = results[1];
     if (!mainData || mainData.length === 0) throw new Error('empty');
-    var fesItems = fesData.map(function(item){ item._readonly = true; return item; });
+    if (isCacheWriteProtected()) return; // 書き込み直後はCDNで上書きしない
+    var fesItems = fesData.map(function(item, idx){ item._readonly = true; if (item.rowIndex === undefined || item.rowIndex === null) item.rowIndex = 'fes_' + idx; return item; });
     var merged = mainData.concat(fesItems);
     saveDataCache(merged);
-    setupMarkers(merged);
+    setupMarkers(merged, true);
   }).catch(function() { console.error('CDNからのデータ取得失敗'); });
 }
 
 function getMarkerKey(p) {
-  if (p.rowIndex !== undefined) return (p.source || '') + ':' + p.rowIndex;
-  if (p.placeId) return (p.source || '') + ':pid:' + p.placeId;
-  return (p.source || '') + ':ll:' + (p.lat || '') + ',' + (p.lng || '');
+  return (p.source || '') + ':' + p.rowIndex;
 }
 
 function getMapUrl(p) {
@@ -1383,7 +1458,7 @@ function createMarkerForPoint(p) {
   marker._item = p;
   
   marker.addListener('click', function() {
-    // スクレイパー由来のreadonly マーカー（fes_schedule.json）
+    // スクレイ���ー由来のreadonly マーカー（fes_schedule.json）
     if (p._readonly) {
       var roDiv = document.createElement('div');
       roDiv.style.cssText = 'line-height:1.7;min-width:200px;max-width:250px;font-size:13px;';
@@ -1498,10 +1573,13 @@ function createMarkerForPoint(p) {
   return marker;
 }
 
-function setupMarkers(data) {
+function setupMarkers(data, fromExternal) {
+  if (!data || data.length === 0) return;
+  if (fromExternal && isCacheWriteProtected()) return; // 外部データによるallData上書きをブロック
+  data = filterDeletedPins(data);
   if (!data || data.length === 0) return;
   allData = data;
-  saveDataCache(data);
+  if (!isCacheWriteProtected()) saveDataCache(data);
   dataLoaded = true;  // idle早期発火対策：データ到着後にフラグON
   ['pcLoadDot','mLoadDot'].forEach(function(id){
     var el = document.getElementById(id);
@@ -1533,6 +1611,7 @@ function renderMarkers() {
     dataIndex.set(getMarkerKey(allData[i]), allData[i]);
   }
   dataIndex.forEach(function(p, key) {
+    // date_startがあればそこから月を計算、なければmonthフィールドを使う
     var filterMonth = p.month;
     if (p.date_start && p.date_start.length >= 7) {
       var dm = parseInt(p.date_start.split('-')[1], 10);
@@ -1637,28 +1716,36 @@ var _deleteInProgress = false;
 function _processDeleteQueue() {
   if (_deleteInProgress || _deleteQueue.length === 0) return;
   _deleteInProgress = true;
+  _updateUndoBtns();
   var job = _deleteQueue.shift();
-  _executeDelete(job.rowIdx, job.source);
+  _executeDelete(job);
 }
 
-function _executeDelete(rowIdx, source) {
+function _executeDelete(job) {
+  var rowIdx = job.rowIdx;
+  var source = job.source;
   var action = source === 'OB' ? 'deleteRowOB' : 'deleteRow';
-  _gasPost({action: action, rowIndex: rowIdx})
+  var payload = {action: action, rowIndex: rowIdx};
+  if (source === 'OB' && job.item && job.item.placeId) payload.placeId = job.item.placeId;
+  _gasPost(payload)
     .then(function(res) {
       if (res.ok) {
+        if (job.item) markDeletedPin(job.item);
         _deleteQueue.forEach(function(job) {
           if ((job.source||'') === (source||'') && job.rowIdx > rowIdx) job.rowIdx -= 1;
         });
         allData.forEach(function(p) {
           if ((p.source||'') === (source||'') && p.rowIndex > rowIdx) p.rowIndex -= 1;
         });
+        saveDataCache(allData, true);
       } else {
         alert('削除に失敗しました: ' + (res.msg || ''));
       }
       _deleteInProgress = false;
+      _updateUndoBtns();
       _processDeleteQueue();
     })
-    .catch(function(e){ alert('エラー: ' + e); _deleteInProgress = false; _processDeleteQueue(); });
+    .catch(function(e){ alert('エラー: ' + e); _deleteInProgress = false; _updateUndoBtns(); _processDeleteQueue(); });
 }
 
 function deletePin(rowIdx, btn, source) {
@@ -1701,13 +1788,13 @@ function deletePin(rowIdx, btn, source) {
   infoWindow.close();
 
   // キューに追加して順番に処理
-  _deleteQueue.push({ rowIdx: rowIdx, source: source });
+  _deleteQueue.push({ rowIdx: rowIdx, source: source, item: _delItem });
   _processDeleteQueue();
 }
 
 // ========== Undo ==========
 function _updateUndoBtns() {
-  var can = _undoStack.length > 0;
+  var can = _undoStack.length > 0 && !_deleteInProgress;
   if (_pcUndoBtn) { _pcUndoBtn.disabled = !can; _pcUndoBtn.style.opacity = can ? '1' : '0.35'; }
   if (_mUndoBtn)  { _mUndoBtn.disabled  = !can; _mUndoBtn.style.opacity  = can ? '1' : '0.35'; }
 }
@@ -1720,8 +1807,10 @@ function undoLastDelete() {
 
   var onSuccess = function(res) {
     if (res.ok) {
+      unmarkDeletedPin(item);
       item.rowIndex = res.rowIndex;
       allData.push(item);
+      saveDataCache(allData, true);
       renderMarkers();
     } else {
       alert('元に戻せませんでした: ' + (res.msg || ''));
@@ -1867,6 +1956,7 @@ function addToFESDB(place) {
           if (addBtn) { addBtn.style.background = '#34a853'; addBtn.textContent = '✓ 追加しました'; }
           setTimeout(function(){ infoWindow.close(); }, 1500);
           allData.push({ source:'OB', rowIndex:res.rowIndex, name:place.name, rating:'', elevation:'', lat:place.lat, lng:place.lng, category:47, month:0, pref:'', adr:'', memo:'', placeId:place.pid||'' });
+          saveDataCache(allData, true);
           renderMarkers();
         } else { alert('エラー: ' + (res.msg||'')); }
       })
@@ -1879,6 +1969,7 @@ function addToFESDB(place) {
           if (addBtn) { addBtn.style.background = '#34a853'; addBtn.textContent = '✓ 追加しました'; }
           setTimeout(function(){ infoWindow.close(); }, 1500);
           allData.push({ rowIndex:res.rowIndex, name:place.name, pref:place.pref, adr:place.adr, date:dateVal, memo:memo, month:month, officialUrl:officialUrl, category:code, lat:place.lat, lng:place.lng, placeId:place.pid||'' });
+          saveDataCache(allData, true);
           renderMarkers();
         } else { alert('エラー: ' + (res.msg||'')); }
       })
