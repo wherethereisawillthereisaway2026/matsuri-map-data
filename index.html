@@ -487,10 +487,9 @@ function buildPanel() {
         btn.textContent = mo + '月';
         btn.addEventListener('click', function() {
           if (activeMonths.has(mo)) {
-            activeMonths.delete(mo); // 選択解除
+            activeMonths.delete(mo);
           } else {
-            activeMonths.clear();
-            activeMonths.add(mo); // 排他選択
+            activeMonths.add(mo);
           }
           pcUpdateSelAll(); pcRenderBody(); updateMarkers();
         });
@@ -1044,10 +1043,9 @@ function initMap() {
               setMBtnStyle(mb, mo);
               mb.addEventListener('click', function() {
                 if (activeMonths.has(mo)) {
-                  activeMonths.delete(mo); // 選択解除
+                  activeMonths.delete(mo);
                 } else {
-                  activeMonths.clear();
-                  activeMonths.add(mo); // 排他選択
+                  activeMonths.add(mo);
                 }
                 refreshMBtns(); updateMarkers();
               });
