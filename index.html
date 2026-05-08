@@ -202,6 +202,7 @@ var markerPool = new Map();   // key: "source:rowIndex" → marker（差分更�
 var searchMarkers = [];
 var allData = [];
 var dataLoaded = false;       // idle早期発火対策フラグ
+var isMaster = (new URLSearchParams(location.search).get('m') === 'ag2026');
 var idleTimer = null;
 var _undoStack = [];
 var _pcUndoBtn = null;
@@ -620,6 +621,7 @@ function buildPanel() {
   _pcUndoBtn.disabled = true;
   _pcUndoBtn.style.cssText = 'padding:6px 8px;background:#fff;color:#34a853;border:1.5px solid #34a853;border-radius:4px;cursor:pointer;font-size:14px;opacity:0.35;';
   _pcUndoBtn.addEventListener('click', undoLastDelete);
+  if (!isMaster) _pcUndoBtn.style.display = 'none';
 
   linkRow.appendChild(_pcUndoBtn);
   linkRow.appendChild(linkBtn);
@@ -1413,6 +1415,7 @@ function initMap() {
   _mUndoBtn.disabled = true;
   _mUndoBtn.style.cssText = 'padding:7px 8px;background:#fff;color:#34a853;border:1.5px solid #34a853;border-radius:4px;cursor:pointer;font-size:14px;opacity:0.35;';
   _mUndoBtn.addEventListener('click', undoLastDelete);
+  if (!isMaster) _mUndoBtn.style.display = 'none';
 
   mLinkRow.appendChild(_mUndoBtn);
   mLinkRow.appendChild(mLinkBtn);
@@ -1557,44 +1560,50 @@ function createMarkerForPoint(p) {
       "<a href='" + titleLink + "' target='_blank' style='color:#1a73e8;font-size:14px;font-weight:bold;text-decoration:none;'>" + p.name + "</a>"
       + " <span style='color:#888;font-size:12px;font-weight:normal;'>📍 " + p.pref + " " + p.adr + "</span><br>"
       + (cleanDate ? "<span style='font-size:12px;'>📅 " + cleanDate + "</span><br>" : "")
-      + "<span onclick='toggleCatSel(" + rowIdx + ")' style='font-size:12px;cursor:pointer;color:#555;'>🏷 " + kindLabel + " <span style='color:#aaa;font-size:10px;'>▼</span></span><br>"
+      + (isMaster
+          ? "<span onclick='toggleCatSel(" + rowIdx + ")' style='font-size:12px;cursor:pointer;color:#555;'>🏷 " + kindLabel + " <span style='color:#aaa;font-size:10px;'>▼</span></span><br>"
+          : "<span style='font-size:12px;color:#555;'>🏷 " + kindLabel + "</span><br>")
       + (memoVal ? "<span style='color:#666;font-size:12px;'>📝 " + memoVal + "</span><br>" : "")
       + (memoUrls.map(function(u){ return "<a href='" + u + "' target='_blank' class='popup-link' title='" + u + "'>外部リンク</a>"; }).join('<br>'))
       + (memoUrls.length ? '<br>' : '')
       + (extractedUrls.map(function(u){ return "<a href='" + u + "' target='_blank' class='popup-link' title='" + u + "'>外部リンク</a>"; }).join('<br>'))
       + (extractedUrls.length ? '<br>' : '')
       + "<hr style='margin:6px 0;border:none;border-top:1px solid #eee;'>"
-      + "<div id='cat-sel-wrap-" + rowIdx + "' style='display:none;margin-bottom:4px;'>"
-      + "<select id='cat-sel-" + rowIdx + "' onchange='saveCategory(" + rowIdx + ")' style='width:100%;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:12px;'>" + catOptions + "</select>"
-      + "<div id='cat-msg-" + rowIdx + "' style='font-size:11px;color:#1a73e8;height:14px;'></div>"
-      + "</div>"
-      + "<div style='display:flex;gap:4px;'>"
-      + "<button onclick='toggleMemo(" + rowIdx + ")' style='flex:1;padding:5px;background:#fff;color:#34a853;border:1.5px solid #34a853;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;'>📝 編集</button>"
-      + "<button onclick='deletePin(" + rowIdx + ",this,\"" + (p.source||'') + "\")' style='flex:1;padding:5px;background:#fff;color:#ea4335;border:1.5px solid #ea4335;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;'>🗑 削除</button>"
-      + "</div>"
+      + (isMaster
+          ? "<div id='cat-sel-wrap-" + rowIdx + "' style='display:none;margin-bottom:4px;'>"
+            + "<select id='cat-sel-" + rowIdx + "' onchange='saveCategory(" + rowIdx + ")' style='width:100%;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:12px;'>" + catOptions + "</select>"
+            + "<div id='cat-msg-" + rowIdx + "' style='font-size:11px;color:#1a73e8;height:14px;'></div>"
+            + "</div>"
+            + "<div style='display:flex;gap:4px;'>"
+            + "<button onclick='toggleMemo(" + rowIdx + ")' style='flex:1;padding:5px;background:#fff;color:#34a853;border:1.5px solid #34a853;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;'>📝 編集</button>"
+            + "<button onclick='deletePin(" + rowIdx + ",this,\"" + (p.source||'') + "\")' style='flex:1;padding:5px;background:#fff;color:#ea4335;border:1.5px solid #ea4335;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;'>🗑 削除</button>"
+            + "</div>"
+          : "")
       + "<div style='margin-top:6px;display:flex;gap:10px;flex-wrap:wrap;font-size:12px;border-top:1px solid #eee;padding-top:5px;'>"
       + (p.officialUrl && p.officialUrl.trim() ? "<a href='" + p.officialUrl.replace(/'/g,"&#39;") + "' target='_blank' style='color:#1a73e8;'>公式ページ</a>" : "")
       + "<a href='https://ja.wikipedia.org/wiki/Special:Search?search=" + encodeURIComponent(p.name) + "' target='_blank' style='color:#1a73e8;'>Wikipedia</a>"
       + "<a href='https://www.google.com/search?q=" + encodeURIComponent(p.name + ' ' + p.pref) + "' target='_blank' style='color:#1a73e8;'>G検索</a>"
       + "</div>"
-      + "<div id='memo-area-" + rowIdx + "' style='display:none;margin-top:4px;'>"
-      + "<input type='text' id='url-" + rowIdx + "' placeholder='公式URL' value=\"" + urlVal + "\" style='width:100%;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:12px;box-sizing:border-box;margin-bottom:4px;'>"
-      + "<textarea id='memo-" + rowIdx + "' rows='2' style='width:100%;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:12px;box-sizing:border-box;resize:vertical;'>" + memoVal + "</textarea>"
-      + "<button id='savememo-btn-" + rowIdx + "' onclick='saveMemo(" + rowIdx + ")' style='width:100%;padding:5px;background:#34a853;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;margin-bottom:6px;'>保存</button>"
-      + (isFESDB
-        ? "<hr style='margin:4px 0 6px;border:none;border-top:1px solid #eee;'>"
-          + "<div style='font-size:11px;color:#888;margin-bottom:4px;'>📌 位置情報（PlaceIDまたは緯度経度）</div>"
-          + "<input type='text' id='loc-pid-" + rowIdx + "' placeholder='Place ID（例: ChIJ...）' value=\"" + pidVal + "\" style='width:100%;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box;margin-bottom:4px;'>"
-          + "<div style='display:flex;gap:4px;margin-bottom:4px;'>"
-          + "<input type='text' id='loc-lat-" + rowIdx + "' placeholder='緯度' value=\"" + (p.lat||'') + "\" style='flex:1;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box;'>"
-          + "<input type='text' id='loc-lng-" + rowIdx + "' placeholder='経度' value=\"" + (p.lng||'') + "\" style='flex:1;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box;'>"
-          + "</div>"
-          + "<div style='display:flex;gap:4px;'>"
-          + "<button id='locpick-btn-" + rowIdx + "' onclick='toggleLocationPick(" + rowIdx + ")' style='flex:1;padding:5px;background:#4285f4;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px;'>📍 地図でピックアップ</button>"
-          + "<button id='saveloc-btn-" + rowIdx + "' onclick='saveLocation(" + rowIdx + ")' style='flex:1;padding:5px;background:#ff6d00;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px;'>位置を保存</button>"
-          + "</div>"
-        : "")
-      + "</div>";
+      + (isMaster
+          ? "<div id='memo-area-" + rowIdx + "' style='display:none;margin-top:4px;'>"
+            + "<input type='text' id='url-" + rowIdx + "' placeholder='公式URL' value=\"" + urlVal + "\" style='width:100%;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:12px;box-sizing:border-box;margin-bottom:4px;'>"
+            + "<textarea id='memo-" + rowIdx + "' rows='2' style='width:100%;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:12px;box-sizing:border-box;resize:vertical;'>" + memoVal + "</textarea>"
+            + "<button id='savememo-btn-" + rowIdx + "' onclick='saveMemo(" + rowIdx + ")' style='width:100%;padding:5px;background:#34a853;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;margin-bottom:6px;'>保存</button>"
+            + (isFESDB
+              ? "<hr style='margin:4px 0 6px;border:none;border-top:1px solid #eee;'>"
+                + "<div style='font-size:11px;color:#888;margin-bottom:4px;'>📌 位置情報（PlaceIDまたは緯度経度）</div>"
+                + "<input type='text' id='loc-pid-" + rowIdx + "' placeholder='Place ID（例: ChIJ...）' value=\"" + pidVal + "\" style='width:100%;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box;margin-bottom:4px;'>"
+                + "<div style='display:flex;gap:4px;margin-bottom:4px;'>"
+                + "<input type='text' id='loc-lat-" + rowIdx + "' placeholder='緯度' value=\"" + (p.lat||'') + "\" style='flex:1;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box;'>"
+                + "<input type='text' id='loc-lng-" + rowIdx + "' placeholder='経度' value=\"" + (p.lng||'') + "\" style='flex:1;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box;'>"
+                + "</div>"
+                + "<div style='display:flex;gap:4px;'>"
+                + "<button id='locpick-btn-" + rowIdx + "' onclick='toggleLocationPick(" + rowIdx + ")' style='flex:1;padding:5px;background:#4285f4;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px;'>📍 地図でピックアップ</button>"
+                + "<button id='saveloc-btn-" + rowIdx + "' onclick='saveLocation(" + rowIdx + ")' style='flex:1;padding:5px;background:#ff6d00;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px;'>位置を保存</button>"
+                + "</div>"
+              : "")
+            + "</div>"
+          : "");
 
     infoWindow.setContent(div);
     infoWindow.open(map, marker);
@@ -1931,6 +1940,15 @@ function showSearchResult(place) {
   });
   searchMarker._isSearchMarker = true;
   searchMarkers.push(searchMarker);
+
+  if (!isMaster) {
+    var mapUrl = place.place_id
+      ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(place.name) + '&query_place_id=' + place.place_id
+      : 'https://www.google.com/maps?q=' + place.geometry.location.lat() + ',' + place.geometry.location.lng();
+    infoWindow.setContent('<div style="font-size:13px;"><a href="' + mapUrl + '" target="_blank" style="color:#1a73e8;font-weight:bold;text-decoration:none;">' + (place.name||'') + '</a></div>');
+    infoWindow.open(map, searchMarker);
+    return;
+  }
 
   var pref = '', adr = '';
   if (place.address_components) {
