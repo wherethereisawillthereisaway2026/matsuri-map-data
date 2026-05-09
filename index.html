@@ -124,9 +124,9 @@ body{margin:0;padding:0;font-family:sans-serif;}
 .menu-top{display:flex;gap:4px;padding:6px 8px 6px;align-items:center;border-bottom:1px solid #eee;}
 .menu-top input{flex:1;border:1px solid #ddd;border-radius:4px;padding:6px 8px;font-size:13px;outline:none;}
 .m-search-btn{padding:6px 12px;background:#1a73e8;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;font-weight:bold;white-space:nowrap;}
-.m-selall-btn{padding:5px 8px;border:1.5px solid #aaa;border-radius:4px;background:#fff;cursor:pointer;font-size:11px;font-weight:bold;color:#aaa;white-space:nowrap;}
+.m-selall-btn{padding:5px 8px;border:1.5px solid #aaa;border-radius:4px;background:#fff;cursor:pointer;font-size:11px;font-weight:bold;color:#aaa;white-space:nowrap;min-width:3em;text-align:center;}
 .m-selall-btn.active{border-color:#ea4335;color:#ea4335;}
-.m-fold-btn{padding:5px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;font-size:11px;color:#888;}
+.m-fold-btn{padding:5px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;font-size:11px;color:#888;min-width:3em;text-align:center;}
 .menu-body{overflow-y:auto;max-height:calc(50vh - 110px);transition:max-height .3s ease;padding:4px 0 8px;}
 .menu-body.collapsed{max-height:0;overflow:hidden;padding:0;}
 .menu-section{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;padding:3px 6px;}
@@ -1197,7 +1197,25 @@ function initMap() {
   });
   mInput.addEventListener('keydown', function(e){ if(e.key==='Enter') mSearchBtn.click(); });
 
+  var mSatBtn = document.createElement('button');
+  mSatBtn.textContent = '🛰';
+  mSatBtn.title = '航空写真 / 地図 切替';
+  mSatBtn.style.cssText = 'padding:6px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;font-size:14px;white-space:nowrap;flex-shrink:0;';
+  mSatBtn.addEventListener('click', function() {
+    var current = map.getMapTypeId();
+    if (current === 'roadmap') {
+      map.setMapTypeId('hybrid');
+      mSatBtn.style.background = '#1a73e8';
+      mSatBtn.style.borderColor = '#1a73e8';
+    } else {
+      map.setMapTypeId('roadmap');
+      mSatBtn.style.background = '#fff';
+      mSatBtn.style.borderColor = '#ddd';
+    }
+  });
+
   menuTop.appendChild(mLocBtn);
+  menuTop.appendChild(mSatBtn);
   menuTop.appendChild(mInput);
   menuTop.appendChild(mSearchBtn);
   menuTop.appendChild(mSelAllBtn);
@@ -1209,6 +1227,7 @@ function initMap() {
   mFoldBtn.addEventListener('click', function() {
     mBodyExpanded = !mBodyExpanded;
     menuBody.classList.toggle('collapsed', !mBodyExpanded);
+    mLinkRow.style.display = mBodyExpanded ? '' : 'none';
     mFoldBtn.textContent = mBodyExpanded ? '▽' : '△';
   });
 
