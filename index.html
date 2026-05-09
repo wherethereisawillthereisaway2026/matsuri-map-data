@@ -1151,22 +1151,26 @@ function initMap() {
   menuTop.className = 'menu-top';
 
   var mLocBtn = document.createElement('button');
-  mLocBtn.textContent = '📍 現在地';
-  mLocBtn.style.cssText = 'padding:6px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;white-space:nowrap;flex-shrink:0;';
+  mLocBtn.textContent = '📍現在地';
+  mLocBtn.style.cssText = 'padding:6px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;font-size:13px;white-space:nowrap;flex-shrink:0;';
   mLocBtn.addEventListener('click', gotoCurrentLocation);
-  
+
   var mInput = document.createElement('input');
   mInput.type = 'text';
-  mInput.placeholder = '場所を検索...';
-  
+  mInput.placeholder = 'エリア検索';
+
   var mSearchBtn = document.createElement('button');
   mSearchBtn.className = 'm-search-btn';
-  mSearchBtn.textContent = '検索';
-  
+  mSearchBtn.textContent = '🔍️';
+
   var mSelAllBtn = document.createElement('div');
   mSelAllBtn.className = 'm-selall-btn';
   mSelAllBtn.textContent = '全選択';
-  
+
+  var mFoldBtn = document.createElement('button');
+  mFoldBtn.className = 'm-fold-btn';
+  mFoldBtn.textContent = '▽';
+
   var mBodyExpanded = true;
 
   // 🔸 Autocomplete - メイン検索用（単一インスタンス）
@@ -1193,59 +1197,19 @@ function initMap() {
   });
   mInput.addEventListener('keydown', function(e){ if(e.key==='Enter') mSearchBtn.click(); });
 
-  var mSatBtn = document.createElement('button');
-  mSatBtn.textContent = '🛰';
-  mSatBtn.title = '航空写真 / 地図 切替';
-  mSatBtn.style.cssText = 'padding:6px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;font-size:14px;white-space:nowrap;flex-shrink:0;';
-  mSatBtn.addEventListener('click', function() {
-    var current = map.getMapTypeId();
-    if (current === 'roadmap') {
-      map.setMapTypeId('hybrid');
-      mSatBtn.style.background = '#1a73e8';
-      mSatBtn.style.borderColor = '#1a73e8';
-    } else {
-      map.setMapTypeId('roadmap');
-      mSatBtn.style.background = '#fff';
-      mSatBtn.style.borderColor = '#ddd';
-    }
-  });
-
   menuTop.appendChild(mLocBtn);
-  menuTop.appendChild(mSatBtn);
   menuTop.appendChild(mInput);
   menuTop.appendChild(mSearchBtn);
   menuTop.appendChild(mSelAllBtn);
+  menuTop.appendChild(mFoldBtn);
 
   var menuBody = document.createElement('div');
   menuBody.className = 'menu-body';
 
-  // ハンドルバー：下スワイプで折りたたみ、タップでトグル
-  var menuHandleBar = document.createElement('div');
-  menuHandleBar.style.cssText = 'width:40px;height:4px;background:#ddd;border-radius:2px;margin:6px auto 4px;cursor:pointer;touch-action:none;';
-  var _mHbStartY = 0, _mHbDragged = false;
-  menuHandleBar.addEventListener('touchstart', function(e) {
-    _mHbStartY = e.touches[0].clientY;
-    _mHbDragged = false;
-  }, {passive: true});
-  menuHandleBar.addEventListener('touchmove', function(e) {
-    if (e.touches[0].clientY - _mHbStartY > 30) {
-      _mHbDragged = true;
-      mBodyExpanded = false;
-      menuBody.classList.add('collapsed');
-    }
-  }, {passive: true});
-  menuHandleBar.addEventListener('touchend', function() {
-    if (!_mHbDragged) {
-      mBodyExpanded = !mBodyExpanded;
-      menuBody.classList.toggle('collapsed', !mBodyExpanded);
-    }
-  });
-  menuHandleBar.addEventListener('click', function(e) {
-    // マウスクリック用（PC開発時）
-    if (e.pointerType !== 'touch') {
-      mBodyExpanded = !mBodyExpanded;
-      menuBody.classList.toggle('collapsed', !mBodyExpanded);
-    }
+  mFoldBtn.addEventListener('click', function() {
+    mBodyExpanded = !mBodyExpanded;
+    menuBody.classList.toggle('collapsed', !mBodyExpanded);
+    mFoldBtn.textContent = mBodyExpanded ? '▽' : '△';
   });
 
   function isAllSelected() {
@@ -1423,7 +1387,6 @@ function initMap() {
   mLinkRow.appendChild(mDot);
 
   mRender();
-  menuWrap.appendChild(menuHandleBar);
   menuWrap.appendChild(menuTop);
   menuWrap.appendChild(menuBody);
   menuWrap.appendChild(mLinkRow);
