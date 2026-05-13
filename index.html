@@ -1190,7 +1190,7 @@ function initMap() {
   mFoldBtn.addEventListener('click', function() {
     mBodyExpanded = !mBodyExpanded;
     menuBody.classList.toggle('collapsed', !mBodyExpanded);
-    mLinkRow.style.display = mBodyExpanded ? '' : 'none';
+    mLinkRow.style.display = mBodyExpanded ? 'flex' : 'none';
     mFoldBtn.textContent = mBodyExpanded ? '▽' : '△';
   });
 
