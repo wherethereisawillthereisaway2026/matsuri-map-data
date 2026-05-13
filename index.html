@@ -168,6 +168,12 @@ body{margin:0;padding:0;font-family:sans-serif;}
   .fp-sel{border:1px solid #aaa;border-radius:4px;color:#aaa;font-size:10px;padding:3px 2px;cursor:pointer;text-align:center;font-weight:bold;}
   .fp-sel.on{border-color:#ea4335;color:#ea4335;}
   .fp-lbl{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;color:#666;text-align:center;line-height:1.3;white-space:pre-wrap;}
+  .fp-grid-sec.no-lbl{grid-template-columns:repeat(4,1fr);}
+  .fp-btn.on.mo{background:#5C6BC0;color:#fff;border-color:#5C6BC0;}
+  .fp-btn.month-hl{outline:2px solid #FF8C00;outline-offset:-2px;}
+  .menu-section.no-lbl{grid-template-columns:repeat(4,1fr);}
+  .m-btn.on.mo{background:#5C6BC0;color:#fff;border-color:#5C6BC0;}
+  .m-btn.month-hl{outline:2px solid #FF8C00;outline-offset:-2px;}
 }
 @media(max-width:600px){.fp{display:none !important;}.bs-wrap{display:none !important;}.menu-wrap{display:block !important;}}
 @keyframes loadPulse{0%,100%{opacity:1}50%{opacity:.25}}
@@ -210,9 +216,8 @@ var _mUndoBtn = null;
 var autocompleteInstance = null;  // 🔸 グローバル Autocomplete インスタンス
 
 var activeTabs = new Set(['t1','t2','t3','t4','t5']);
-var matsuriOn = false;
-var hanabiOn = false;
 var activeMonths = new Set();
+var catBtnRefs = {};
 var activeNat = new Set();
 var activeHis = new Set();
 var activeSat = new Set();
@@ -333,24 +338,47 @@ function getMarkerIcon(code) {
   return iconCache[code];
 }
 
+function updateMonthHighlights() {
+  var refs = catBtnRefs;
+  if (activeMonths.size === 0 || activeMonths.size === 12) {
+    Object.keys(refs).forEach(function(k){ refs[k].classList.remove('month-hl'); });
+    return;
+  }
+  var matchCodes = new Set();
+  if (typeof allData !== 'undefined') {
+    allData.forEach(function(p) {
+      if (Array.isArray(p.month) && p.month.some(function(m){ return activeMonths.has(m); })) {
+        matchCodes.add(p.category);
+      }
+    });
+  }
+  Object.keys(refs).forEach(function(k) {
+    refs[k].classList.toggle('month-hl', matchCodes.has(parseInt(k)));
+  });
+}
+
 function isVisible(code, month) {
-  if (code === 1) return matsuriOn && activeMonths.has(month);
-  if (code === 2) return hanabiOn && activeMonths.has(month);
+  // 祭り・花火：月フィルターのみで制御
+  if (code === 1 || code === 2) {
+    if (activeMonths.size === 0) return false;
+    if (activeMonths.size === 12) return true;
+    return activeMonths.has(month);
+  }
   var catOn = activeNat.has(code) || activeHis.has(code) || activeSat.has(code) || activeHana.has(code);
   // 見頃月が設定されているスポット：月フィルターが絞り込まれていれば月で判断（カテゴリON/OFF問わず）
   if (Array.isArray(month) && month.length > 0) {
     if (activeMonths.size > 0 && activeMonths.size < 12) {
       return month.some(function(m){ return activeMonths.has(m); });
     }
-    return catOn; // 全月or月フィルターなし → カテゴリで判断
+    return catOn;
   }
-  // 見頃月未設定 → カテゴリで判断
   return catOn;
 }
 
 function updateMarkers() {
   saveFilterState();
   renderMarkers();
+  updateMonthHighlights();
 }
 
 var bodyWrap;
@@ -370,7 +398,7 @@ function buildPanel() {
   pcSelAllBtn.textContent = '全選択';
 
   function pcIsAllSelected() {
-    return matsuriOn && hanabiOn && activeMonths.size===12
+    return activeMonths.size===12
       && NAT_CATS.every(function(c){ return activeNat.has(c.code); })
       && HIS_CATS.every(function(c){ return activeHis.has(c.code); })
       && SAT_CATS.every(function(c){ return activeSat.has(c.code); })
@@ -386,10 +414,8 @@ function buildPanel() {
   pcSelAllBtn.addEventListener('click', function() {
     if (pcIsAllSelected()) {
       activeMonths.clear(); activeNat.clear(); activeHis.clear(); activeSat.clear(); activeHana.clear();
-      matsuriOn=false; hanabiOn=false;
     } else {
       for(var i=1;i<=12;i++) activeMonths.add(i);
-      matsuriOn=true; hanabiOn=true;
       NAT_CATS.forEach(function(c){ activeNat.add(c.code); });
       HIS_CATS.forEach(function(c){ activeHis.add(c.code); });
       SAT_CATS.forEach(function(c){ activeSat.add(c.code); });
@@ -479,124 +505,114 @@ function buildPanel() {
 
   function pcRenderBody() {
     bodyWrap.innerHTML = '';
+    catBtnRefs = {};
 
-    var allMH = matsuriOn && hanabiOn && activeMonths.size===12;
-
-    function makeMonthRow(labelEl, months, cls) {
+    // 月ボタン行を作る（labelなし、4列グリッド）
+    function makeMonthSec(months, addSelAll) {
       var sec = document.createElement('div');
-      sec.className = 'fp-grid-sec';
-      if (months[0] > 4) sec.style.paddingTop = '0';
-      sec.appendChild(labelEl);
+      sec.className = addSelAll ? 'fp-grid-sec' : 'fp-grid-sec no-lbl';
+      if (!addSelAll) sec.style.paddingTop = '0';
+      if (addSelAll) {
+        var sa = document.createElement('div');
+        sa.className = 'fp-sel' + (activeMonths.size===12 ? ' on' : '');
+        sa.textContent = '全選択';
+        sa.addEventListener('click', function() {
+          if (activeMonths.size===12) activeMonths.clear();
+          else for(var i=1;i<=12;i++) activeMonths.add(i);
+          pcUpdateSelAll(); pcRenderBody(); updateMarkers();
+        });
+        sec.appendChild(sa);
+      }
       months.forEach(function(mo) {
-        var isOn = activeMonths.has(mo);
         var btn = document.createElement('div');
-        btn.className = 'fp-btn' + (isOn ? ' on ' + cls : '');
+        btn.className = 'fp-btn' + (activeMonths.has(mo) ? ' on mo' : '');
         btn.textContent = mo + '月';
         btn.addEventListener('click', function() {
-          if (activeMonths.has(mo)) {
-            activeMonths.delete(mo);
-          } else {
-            activeMonths.add(mo);
-          }
+          if (activeMonths.has(mo)) activeMonths.delete(mo); else activeMonths.add(mo);
           pcUpdateSelAll(); pcRenderBody(); updateMarkers();
         });
         sec.appendChild(btn);
       });
       return sec;
     }
+    bodyWrap.appendChild(makeMonthSec([1,2,3,4], true));
+    bodyWrap.appendChild(makeMonthSec([5,6,7,8], false));
+    bodyWrap.appendChild(makeMonthSec([9,10,11,12], false));
 
-    var sa1 = document.createElement('div');
-    sa1.className = 'fp-sel' + (allMH ? ' on' : '');
-    sa1.textContent = '全選択';
-    sa1.addEventListener('click', function() {
-      if (matsuriOn && hanabiOn && activeMonths.size===12) {
-        matsuriOn=false; hanabiOn=false; activeMonths.clear();
-      } else {
-        matsuriOn=true; hanabiOn=true;
-        for(var i=1;i<=12;i++) activeMonths.add(i);
-      }
-      pcUpdateSelAll(); pcRenderBody(); updateMarkers();
-    });
-    bodyWrap.appendChild(makeMonthRow(sa1, [1,2,3,4], matsuriOn?'mat':'han'));
-
-    var kmBtn = document.createElement('div');
-    kmBtn.className = 'fp-kind mat' + (matsuriOn ? ' on' : '');
-    kmBtn.textContent = '🏮 祭り';
-    kmBtn.addEventListener('click', function() {
-      matsuriOn=!matsuriOn; pcUpdateSelAll(); pcRenderBody(); updateMarkers();
-    });
-    bodyWrap.appendChild(makeMonthRow(kmBtn, [5,6,7,8], matsuriOn?'mat':'han'));
-
-    var khBtn = document.createElement('div');
-    khBtn.className = 'fp-kind han' + (hanabiOn ? ' on' : '');
-    khBtn.textContent = '🎆 花火';
-    khBtn.addEventListener('click', function() {
-      hanabiOn=!hanabiOn; pcUpdateSelAll(); pcRenderBody(); updateMarkers();
-    });
-    bodyWrap.appendChild(makeMonthRow(khBtn, [9,10,11,12], hanabiOn?'han':'mat'));
-
-    function makePCCatRows(cats, activeSet, cls, labelText) {
+    // NAT/HIS/SAT: 全選択あり、ラベルなし
+    function makePCCatRows(cats, activeSet, cls) {
       var allOn = cats.every(function(c){ return activeSet.has(c.code); });
+      var saBtn;
       var btns = cats.map(function(cat) {
         var b = document.createElement('div');
         b.className = 'fp-btn' + (activeSet.has(cat.code) ? ' on ' + cls : '');
         b.textContent = cat.label;
+        catBtnRefs[cat.code] = b;
         b.addEventListener('click', function() {
-          if (activeSet.has(cat.code)) { activeSet.delete(cat.code); b.classList.remove('on',cls); }
+          if (activeSet.has(cat.code)) { activeSet.delete(cat.code); b.classList.remove('on',cls,'month-hl'); }
           else { activeSet.add(cat.code); b.classList.add('on',cls); }
           var nowAll = cats.every(function(c){ return activeSet.has(c.code); });
-          saBtn.className = 'fp-sel' + (nowAll ? ' on' : '');
+          if (saBtn) saBtn.className = 'fp-sel' + (nowAll ? ' on' : '');
           pcUpdateSelAll(); updateMarkers();
         });
         return b;
       });
-
       var rows = [];
       for (var i=0; i<btns.length; i+=4) rows.push(btns.slice(i,i+4));
-      var saBtn;
-
       rows.forEach(function(row, ri) {
         var sec = document.createElement('div');
-        sec.className = 'fp-grid-sec' + (ri===0 ? ' sep' : '');
+        sec.className = (ri===0 ? 'fp-grid-sec sep' : 'fp-grid-sec no-lbl');
         if (ri > 0) sec.style.paddingTop = '0';
-
         if (ri === 0) {
           saBtn = document.createElement('div');
           saBtn.className = 'fp-sel' + (allOn ? ' on' : '');
           saBtn.textContent = '全選択';
           saBtn.addEventListener('click', function() {
             var nowAll = cats.every(function(c){ return activeSet.has(c.code); });
-            if (nowAll) {
-              cats.forEach(function(c){ activeSet.delete(c.code); });
-              btns.forEach(function(b){ b.classList.remove('on',cls); });
-              saBtn.className = 'fp-sel';
-            } else {
-              cats.forEach(function(c){ activeSet.add(c.code); });
-              btns.forEach(function(b){ b.classList.add('on',cls); });
-              saBtn.className = 'fp-sel on';
-            }
+            if (nowAll) { cats.forEach(function(c){ activeSet.delete(c.code); }); btns.forEach(function(b){ b.classList.remove('on',cls,'month-hl'); }); saBtn.className='fp-sel'; }
+            else { cats.forEach(function(c){ activeSet.add(c.code); }); btns.forEach(function(b){ b.classList.add('on',cls); }); saBtn.className='fp-sel on'; }
             pcUpdateSelAll(); updateMarkers();
           });
           sec.appendChild(saBtn);
-        } else {
-          var lbl = document.createElement('div');
-          lbl.className = 'fp-lbl';
-          lbl.textContent = ri===1 ? labelText.replace(' ','\n') : '';
-          sec.appendChild(lbl);
         }
         row.forEach(function(b){ sec.appendChild(b); });
-        for (var j=row.length; j<4; j++) {
-          var e=document.createElement('div'); e.className='fp-btn empty'; sec.appendChild(e);
-        }
+        for (var j=row.length; j<4; j++) { var e=document.createElement('div'); e.className='fp-btn empty'; sec.appendChild(e); }
         bodyWrap.appendChild(sec);
       });
     }
 
-    makePCCatRows(NAT_CATS, activeNat, 'nat', '自然 景観');
-    makePCCatRows(HIS_CATS, activeHis, 'his', '建築');
-    makePCCatRows(SAT_CATS, activeSat, 'sat', '撮影');
-    makePCCatRows(HANA_CATS, activeHana, 'hana', '花');
+    // 花: 全選択・ラベルなし、4列のみ
+    function makePCHanaRows(cats, activeSet, cls) {
+      var btns = cats.map(function(cat) {
+        var b = document.createElement('div');
+        b.className = 'fp-btn' + (activeSet.has(cat.code) ? ' on ' + cls : '');
+        b.textContent = cat.label;
+        catBtnRefs[cat.code] = b;
+        b.addEventListener('click', function() {
+          if (activeSet.has(cat.code)) { activeSet.delete(cat.code); b.classList.remove('on',cls,'month-hl'); }
+          else { activeSet.add(cat.code); b.classList.add('on',cls); }
+          pcUpdateSelAll(); updateMarkers();
+        });
+        return b;
+      });
+      var rows = [];
+      for (var i=0; i<btns.length; i+=4) rows.push(btns.slice(i,i+4));
+      rows.forEach(function(row, ri) {
+        var sec = document.createElement('div');
+        sec.className = 'fp-grid-sec no-lbl' + (ri===0 ? ' sep' : '');
+        if (ri > 0) sec.style.paddingTop = '0';
+        row.forEach(function(b){ sec.appendChild(b); });
+        for (var j=row.length; j<4; j++) { var e=document.createElement('div'); e.className='fp-btn empty'; sec.appendChild(e); }
+        bodyWrap.appendChild(sec);
+      });
+    }
+
+    makePCCatRows(NAT_CATS, activeNat, 'nat');
+    makePCCatRows(HIS_CATS, activeHis, 'his');
+    makePCCatRows(SAT_CATS, activeSat, 'sat');
+    makePCHanaRows(HANA_CATS, activeHana, 'hana');
     pcUpdateSelAll();
+    if (typeof allData !== 'undefined' && allData.length) updateMonthHighlights();
   }
 
   pcRenderBody();
@@ -751,8 +767,6 @@ var FILTER_CACHE_KEY = 'fesFilterState_v1';
 function saveFilterState() {
   try {
     localStorage.setItem(FILTER_CACHE_KEY, JSON.stringify({
-      matsuriOn: matsuriOn,
-      hanabiOn: hanabiOn,
       months: Array.from(activeMonths),
       nat: Array.from(activeNat),
       his: Array.from(activeHis),
@@ -768,8 +782,6 @@ function loadFilterState() {
     if (!raw) return false;
     var s = JSON.parse(raw);
     if (!s) return false;
-    matsuriOn = !!s.matsuriOn;
-    hanabiOn = !!s.hanabiOn;
     activeMonths = new Set(s.months || []);
     activeNat = new Set(s.nat || []);
     activeHis = new Set(s.his || []);
@@ -984,7 +996,6 @@ function initMap() {
       activeTabs.clear();
       bsTabDefs.forEach(function(td){ bsTabEls[td.id].classList.remove('on'); });
       activeMonths.clear(); activeNat.clear(); activeHis.clear(); activeSat.clear(); activeHana.clear();
-      matsuriOn = false; hanabiOn = false;
       bsRenderBody();
       updateMarkers();
     });
@@ -1039,24 +1050,6 @@ function initMap() {
           });
           hdr.appendChild(lbl); hdr.appendChild(sa); sec.appendChild(hdr);
 
-          var kindRow = document.createElement('div'); kindRow.className = 'bs-kind-row';
-          var kmBtn = document.createElement('div');
-          kmBtn.className = 'bs-kind km' + (matsuriOn ? ' on' : '');
-          kmBtn.textContent = '祭り';
-          var khBtn = document.createElement('div');
-          khBtn.className = 'bs-kind kh' + (hanabiOn ? ' on' : '');
-          khBtn.textContent = '花火';
-          kmBtn.addEventListener('click', function() {
-            matsuriOn = !matsuriOn;
-            kmBtn.classList.toggle('on', matsuriOn);
-            refreshMBtns(); updateMarkers();
-          });
-          khBtn.addEventListener('click', function() {
-            hanabiOn = !hanabiOn;
-            khBtn.classList.toggle('on', hanabiOn);
-            refreshMBtns(); updateMarkers();
-          });
-          kindRow.appendChild(kmBtn); kindRow.appendChild(khBtn); sec.appendChild(kindRow);
 
           var mgrid = document.createElement('div');
           mgrid.className = 'bs-grid-4';
@@ -1237,7 +1230,7 @@ function initMap() {
   });
 
   function isAllSelected() {
-    return matsuriOn && hanabiOn && activeMonths.size===12
+    return activeMonths.size===12
       && NAT_CATS.every(function(c){ return activeNat.has(c.code); })
       && HIS_CATS.every(function(c){ return activeHis.has(c.code); })
       && SAT_CATS.every(function(c){ return activeSat.has(c.code); })
@@ -1246,11 +1239,9 @@ function initMap() {
   mSelAllBtn.addEventListener('click', function() {
     if (isAllSelected()) {
       activeMonths.clear(); activeNat.clear(); activeHis.clear(); activeSat.clear(); activeHana.clear();
-      matsuriOn=false; hanabiOn=false;
       mSelAllBtn.className = 'm-selall-btn';
     } else {
       for(var i=1;i<=12;i++) activeMonths.add(i);
-      matsuriOn=true; hanabiOn=true;
       NAT_CATS.forEach(function(c){ activeNat.add(c.code); });
       HIS_CATS.forEach(function(c){ activeHis.add(c.code); });
       SAT_CATS.forEach(function(c){ activeSat.add(c.code); });
@@ -1262,121 +1253,110 @@ function initMap() {
 
   function mRender() {
     menuBody.innerHTML = '';
+    catBtnRefs = {};
 
-    var allMatHan = matsuriOn && hanabiOn && activeMonths.size===12;
-
-    function makeMonthRow(labelEl, months, cls) {
+    function makeMonthSec(months, addSelAll) {
       var sec = document.createElement('div');
-      sec.className = 'menu-section';
-      if (months[0] > 4) sec.style.paddingTop = '0';
-      sec.appendChild(labelEl);
+      sec.className = addSelAll ? 'menu-section' : 'menu-section no-lbl';
+      if (!addSelAll) sec.style.paddingTop = '0';
+      if (addSelAll) {
+        var sa = document.createElement('div');
+        sa.className = 'm-label sel' + (activeMonths.size===12 ? ' on' : '');
+        sa.textContent = '全選択';
+        sa.addEventListener('click', function() {
+          if (activeMonths.size===12) activeMonths.clear();
+          else for(var i=1;i<=12;i++) activeMonths.add(i);
+          mRender(); updateMarkers();
+        });
+        sec.appendChild(sa);
+      }
       months.forEach(function(mo) {
         var b = document.createElement('div');
-        b.className = 'm-btn' + (activeMonths.has(mo) ? ' on ' + cls : '');
+        b.className = 'm-btn' + (activeMonths.has(mo) ? ' on mo' : '');
         b.textContent = mo + '月';
         b.addEventListener('click', function() {
-          if (activeMonths.has(mo)) activeMonths.delete(mo);
-          else activeMonths.add(mo);
+          if (activeMonths.has(mo)) activeMonths.delete(mo); else activeMonths.add(mo);
           mRender(); updateMarkers();
         });
         sec.appendChild(b);
       });
       return sec;
     }
+    menuBody.appendChild(makeMonthSec([1,2,3,4], true));
+    menuBody.appendChild(makeMonthSec([5,6,7,8], false));
+    menuBody.appendChild(makeMonthSec([9,10,11,12], false));
 
-    var sa1 = document.createElement('div');
-    sa1.className = 'm-label sel' + (allMatHan ? ' on' : '');
-    sa1.textContent = '全選択';
-    sa1.addEventListener('click', function() {
-      if (matsuriOn && hanabiOn && activeMonths.size===12) {
-        matsuriOn=false; hanabiOn=false; activeMonths.clear();
-      } else {
-        matsuriOn=true; hanabiOn=true;
-        for(var i=1;i<=12;i++) activeMonths.add(i);
-      }
-      mRender(); updateMarkers();
-    });
-    menuBody.appendChild(makeMonthRow(sa1, [1,2,3,4], matsuriOn?'mat':'han'));
-
-    var kmBtn = document.createElement('div');
-    kmBtn.className = 'm-kind mat' + (matsuriOn ? ' on' : '');
-    kmBtn.textContent = '🏮 祭り';
-    kmBtn.addEventListener('click', function() {
-      matsuriOn=!matsuriOn; mRender(); updateMarkers();
-    });
-    menuBody.appendChild(makeMonthRow(kmBtn, [5,6,7,8], matsuriOn?'mat':'han'));
-
-    var khBtn = document.createElement('div');
-    khBtn.className = 'm-kind han' + (hanabiOn ? ' on' : '');
-    khBtn.textContent = '🎆 花火';
-    khBtn.addEventListener('click', function() {
-      hanabiOn=!hanabiOn; mRender(); updateMarkers();
-    });
-    menuBody.appendChild(makeMonthRow(khBtn, [9,10,11,12], hanabiOn?'han':'mat'));
-
-    function makeCatRows(cats, activeSet, cls, labelText) {
+    function makeCatRows(cats, activeSet, cls) {
       var allOn = cats.every(function(c){ return activeSet.has(c.code); });
+      var saBtn;
       var btns = cats.map(function(cat) {
         var b = document.createElement('div');
         b.className = 'm-btn' + (activeSet.has(cat.code) ? ' on ' + cls : '');
         b.textContent = cat.label;
+        catBtnRefs[cat.code] = b;
         b.addEventListener('click', function() {
-          if (activeSet.has(cat.code)) { activeSet.delete(cat.code); b.classList.remove('on',cls); }
+          if (activeSet.has(cat.code)) { activeSet.delete(cat.code); b.classList.remove('on',cls,'month-hl'); }
           else { activeSet.add(cat.code); b.classList.add('on',cls); }
           var nowAll = cats.every(function(c){ return activeSet.has(c.code); });
-          saBtn.className = 'm-label sel' + (nowAll ? ' on' : '');
+          if (saBtn) saBtn.className = 'm-label sel' + (nowAll ? ' on' : '');
           updateMarkers();
         });
         return b;
       });
-
       var rows = [];
       for (var i=0; i<btns.length; i+=4) rows.push(btns.slice(i,i+4));
-
-      var saBtn;
       rows.forEach(function(row, ri) {
         var sec = document.createElement('div');
-        sec.className = 'menu-section' + (ri===0 ? ' sep' : '');
+        sec.className = (ri===0 ? 'menu-section sep' : 'menu-section no-lbl');
         if (ri > 0) sec.style.paddingTop = '0';
-
         if (ri === 0) {
           saBtn = document.createElement('div');
           saBtn.className = 'm-label sel' + (allOn ? ' on' : '');
           saBtn.textContent = '全選択';
           saBtn.addEventListener('click', function() {
             var nowAll = cats.every(function(c){ return activeSet.has(c.code); });
-            if (nowAll) {
-              cats.forEach(function(c){ activeSet.delete(c.code); });
-              btns.forEach(function(b){ b.classList.remove('on',cls); });
-              saBtn.className = 'm-label sel';
-            } else {
-              cats.forEach(function(c){ activeSet.add(c.code); });
-              btns.forEach(function(b){ b.classList.add('on',cls); });
-              saBtn.className = 'm-label sel on';
-            }
+            if (nowAll) { cats.forEach(function(c){ activeSet.delete(c.code); }); btns.forEach(function(b){ b.classList.remove('on',cls,'month-hl'); }); saBtn.className='m-label sel'; }
+            else { cats.forEach(function(c){ activeSet.add(c.code); }); btns.forEach(function(b){ b.classList.add('on',cls); }); saBtn.className='m-label sel on'; }
             updateMarkers();
           });
           sec.appendChild(saBtn);
-        } else {
-          var lbl = document.createElement('div');
-          lbl.className = 'm-label';
-          lbl.style.whiteSpace = 'pre-wrap';
-          lbl.textContent = ri===1 ? labelText.replace(' ','\n') : '';
-          sec.appendChild(lbl);
         }
-
         row.forEach(function(b){ sec.appendChild(b); });
-        for (var j=row.length; j<4; j++) {
-          var e=document.createElement('div'); e.className='m-btn empty'; sec.appendChild(e);
-        }
+        for (var j=row.length; j<4; j++) { var e=document.createElement('div'); e.className='m-btn empty'; sec.appendChild(e); }
         menuBody.appendChild(sec);
       });
     }
 
-    makeCatRows(NAT_CATS, activeNat, 'nat', '自然 景観');
-    makeCatRows(HIS_CATS, activeHis, 'his', '建築');
-    makeCatRows(SAT_CATS, activeSat, 'sat', '撮影');
-    makeCatRows(HANA_CATS, activeHana, 'hana', '花');
+    function makeHanaRows(cats, activeSet, cls) {
+      var btns = cats.map(function(cat) {
+        var b = document.createElement('div');
+        b.className = 'm-btn' + (activeSet.has(cat.code) ? ' on ' + cls : '');
+        b.textContent = cat.label;
+        catBtnRefs[cat.code] = b;
+        b.addEventListener('click', function() {
+          if (activeSet.has(cat.code)) { activeSet.delete(cat.code); b.classList.remove('on',cls,'month-hl'); }
+          else { activeSet.add(cat.code); b.classList.add('on',cls); }
+          updateMarkers();
+        });
+        return b;
+      });
+      var rows = [];
+      for (var i=0; i<btns.length; i+=4) rows.push(btns.slice(i,i+4));
+      rows.forEach(function(row, ri) {
+        var sec = document.createElement('div');
+        sec.className = 'menu-section no-lbl' + (ri===0 ? ' sep' : '');
+        if (ri > 0) sec.style.paddingTop = '0';
+        row.forEach(function(b){ sec.appendChild(b); });
+        for (var j=row.length; j<4; j++) { var e=document.createElement('div'); e.className='m-btn empty'; sec.appendChild(e); }
+        menuBody.appendChild(sec);
+      });
+    }
+
+    makeCatRows(NAT_CATS, activeNat, 'nat');
+    makeCatRows(HIS_CATS, activeHis, 'his');
+    makeCatRows(SAT_CATS, activeSat, 'sat');
+    makeHanaRows(HANA_CATS, activeHana, 'hana');
+    if (typeof allData !== 'undefined' && allData.length) updateMonthHighlights();
   }
 
   var mLinkRow = document.createElement('div');
