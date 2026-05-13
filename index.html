@@ -337,12 +337,15 @@ function isVisible(code, month) {
   if (code === 1) return matsuriOn && activeMonths.has(month);
   if (code === 2) return hanabiOn && activeMonths.has(month);
   var catOn = activeNat.has(code) || activeHis.has(code) || activeSat.has(code) || activeHana.has(code);
-  if (!catOn) return false;
-  // O列に見頃月が設定されており、月フィルターが絞り込まれている場合のみ月チェック
-  if (Array.isArray(month) && month.length > 0 && activeMonths.size > 0 && activeMonths.size < 12) {
-    return month.some(function(m){ return activeMonths.has(m); });
+  // 見頃月が設定されているスポット：月フィルターが絞り込まれていれば月で判断（カテゴリON/OFF問わず）
+  if (Array.isArray(month) && month.length > 0) {
+    if (activeMonths.size > 0 && activeMonths.size < 12) {
+      return month.some(function(m){ return activeMonths.has(m); });
+    }
+    return catOn; // 全月or月フィルターなし → カテゴリで判断
   }
-  return true;
+  // 見頃月未設定 → カテゴリで判断
+  return catOn;
 }
 
 function updateMarkers() {
