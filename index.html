@@ -336,11 +336,13 @@ function getMarkerIcon(code) {
 function isVisible(code, month) {
   if (code === 1) return matsuriOn && activeMonths.has(month);
   if (code === 2) return hanabiOn && activeMonths.has(month);
-  if (activeNat.has(code)) return true;
-  if (activeHis.has(code)) return true;
-  if (activeSat.has(code)) return true;
-  if (activeHana.has(code)) return true;
-  return false;
+  var catOn = activeNat.has(code) || activeHis.has(code) || activeSat.has(code) || activeHana.has(code);
+  if (!catOn) return false;
+  // O列に見頃月が設定されており、月フィルターが絞り込まれている場合のみ月チェック
+  if (Array.isArray(month) && month.length > 0 && activeMonths.size > 0 && activeMonths.size < 12) {
+    return month.some(function(m){ return activeMonths.has(m); });
+  }
+  return true;
 }
 
 function updateMarkers() {
