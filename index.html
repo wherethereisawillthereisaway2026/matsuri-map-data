@@ -507,22 +507,11 @@ function buildPanel() {
     bodyWrap.innerHTML = '';
     catBtnRefs = {};
 
-    // 月ボタン行を作る（labelなし、4列グリッド）
-    function makeMonthSec(months, addSelAll) {
+    // 月ボタン行を作る（4列グリッド、全選択なし）
+    function makeMonthSec(months) {
       var sec = document.createElement('div');
-      sec.className = addSelAll ? 'fp-grid-sec' : 'fp-grid-sec no-lbl';
-      if (!addSelAll) sec.style.paddingTop = '0';
-      if (addSelAll) {
-        var sa = document.createElement('div');
-        sa.className = 'fp-sel' + (activeMonths.size===12 ? ' on' : '');
-        sa.textContent = '全選択';
-        sa.addEventListener('click', function() {
-          if (activeMonths.size===12) activeMonths.clear();
-          else for(var i=1;i<=12;i++) activeMonths.add(i);
-          pcUpdateSelAll(); pcRenderBody(); updateMarkers();
-        });
-        sec.appendChild(sa);
-      }
+      sec.className = 'fp-grid-sec no-lbl';
+      sec.style.paddingTop = '0';
       months.forEach(function(mo) {
         var btn = document.createElement('div');
         btn.className = 'fp-btn' + (activeMonths.has(mo) ? ' on mo' : '');
@@ -535,9 +524,9 @@ function buildPanel() {
       });
       return sec;
     }
-    bodyWrap.appendChild(makeMonthSec([1,2,3,4], true));
-    bodyWrap.appendChild(makeMonthSec([5,6,7,8], false));
-    bodyWrap.appendChild(makeMonthSec([9,10,11,12], false));
+    bodyWrap.appendChild(makeMonthSec([1,2,3,4]));
+    bodyWrap.appendChild(makeMonthSec([5,6,7,8]));
+    bodyWrap.appendChild(makeMonthSec([9,10,11,12]));
 
     // NAT/HIS/SAT: 全選択あり、ラベルなし
     function makePCCatRows(cats, activeSet, cls) {
@@ -1030,27 +1019,6 @@ function initMap() {
         sec.className = 'bs-section';
 
         if (tid === 't1') {
-          var hdr = document.createElement('div'); hdr.className = 'bs-sec-header';
-          var lbl = document.createElement('div'); lbl.className = 'bs-sec-label'; lbl.textContent = '祭り・花火';
-          var sa = document.createElement('div');
-          sa.className = 'bs-selall' + (matsuriOn && hanabiOn && activeMonths.size === 12 ? ' active' : '');
-          sa.textContent = '全選択';
-          sa.addEventListener('click', function() {
-            var allOn = matsuriOn && hanabiOn && activeMonths.size === 12;
-            if (allOn) {
-              matsuriOn = false; hanabiOn = false; activeMonths.clear();
-              kmBtn.classList.remove('on'); khBtn.classList.remove('on');
-            } else {
-              matsuriOn = true; hanabiOn = true;
-              for(var m=1;m<=12;m++) activeMonths.add(m);
-              kmBtn.classList.add('on'); khBtn.classList.add('on');
-            }
-            sa.className = 'bs-selall' + (matsuriOn && hanabiOn && activeMonths.size===12 ? ' active' : '');
-            refreshMBtns(); updateMarkers();
-          });
-          hdr.appendChild(lbl); hdr.appendChild(sa); sec.appendChild(hdr);
-
-
           var mgrid = document.createElement('div');
           mgrid.className = 'bs-grid-4';
           mgrid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:3px;';
@@ -1062,11 +1030,8 @@ function initMap() {
               mb.textContent = mo + '月';
               setMBtnStyle(mb, mo);
               mb.addEventListener('click', function() {
-                if (activeMonths.has(mo)) {
-                  activeMonths.delete(mo);
-                } else {
-                  activeMonths.add(mo);
-                }
+                if (activeMonths.has(mo)) activeMonths.delete(mo);
+                else activeMonths.add(mo);
                 refreshMBtns(); updateMarkers();
               });
               mBtns[mo] = mb; mgrid.appendChild(mb);
@@ -1078,10 +1043,8 @@ function initMap() {
             for (var mo=1;mo<=12;mo++) { if(mBtns[mo]) setMBtnStyle(mBtns[mo],mo); }
           }
           function setMBtnStyle(el, mo) {
-            el.classList.remove('on','t1','t2');
-            if (activeMonths.has(mo)) {
-              el.classList.add('on', hanabiOn && !matsuriOn ? 't2' : 't1');
-            }
+            el.classList.remove('on','mo');
+            if (activeMonths.has(mo)) el.classList.add('on','mo');
           }
         } else {
           var cats, activeSet, cls, title;
@@ -1255,21 +1218,10 @@ function initMap() {
     menuBody.innerHTML = '';
     catBtnRefs = {};
 
-    function makeMonthSec(months, addSelAll) {
+    function makeMonthSec(months) {
       var sec = document.createElement('div');
-      sec.className = addSelAll ? 'menu-section' : 'menu-section no-lbl';
-      if (!addSelAll) sec.style.paddingTop = '0';
-      if (addSelAll) {
-        var sa = document.createElement('div');
-        sa.className = 'm-label sel' + (activeMonths.size===12 ? ' on' : '');
-        sa.textContent = '全選択';
-        sa.addEventListener('click', function() {
-          if (activeMonths.size===12) activeMonths.clear();
-          else for(var i=1;i<=12;i++) activeMonths.add(i);
-          mRender(); updateMarkers();
-        });
-        sec.appendChild(sa);
-      }
+      sec.className = 'menu-section no-lbl';
+      sec.style.paddingTop = '0';
       months.forEach(function(mo) {
         var b = document.createElement('div');
         b.className = 'm-btn' + (activeMonths.has(mo) ? ' on mo' : '');
@@ -1282,9 +1234,9 @@ function initMap() {
       });
       return sec;
     }
-    menuBody.appendChild(makeMonthSec([1,2,3,4], true));
-    menuBody.appendChild(makeMonthSec([5,6,7,8], false));
-    menuBody.appendChild(makeMonthSec([9,10,11,12], false));
+    menuBody.appendChild(makeMonthSec([1,2,3,4]));
+    menuBody.appendChild(makeMonthSec([5,6,7,8]));
+    menuBody.appendChild(makeMonthSec([9,10,11,12]));
 
     function makeCatRows(cats, activeSet, cls) {
       var allOn = cats.every(function(c){ return activeSet.has(c.code); });
