@@ -152,8 +152,9 @@ body{margin:0;padding:0;font-family:sans-serif;}
 @media(min-width:601px){
   .fp{display:block !important;}
   .menu-wrap{display:none !important;}
-  .fp-grid-sec{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;padding:3px 4px;}
+  .fp-grid-sec{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;padding:3px 4px;}
   .fp-grid-sec.sep{margin-top:6px;}
+  .fp-sec-hdr{display:flex;align-items:center;justify-content:flex-end;padding:2px 4px 0;margin-top:6px;border-top:1px solid #eee;}
   .fp-btn{padding:6px 2px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;font-size:11px;font-weight:bold;text-align:center;color:#555;line-height:1.2;overflow:hidden;}
   .fp-btn.empty{border:none;background:transparent;cursor:default;}
   .fp-btn.on.mat{background:#FF8C42;color:#fff;border-color:#FF8C42;}
@@ -547,24 +548,25 @@ function buildPanel() {
         });
         return b;
       });
+      var hdr = document.createElement('div');
+      hdr.className = 'fp-sec-hdr';
+      saBtn = document.createElement('div');
+      saBtn.className = 'fp-sel' + (allOn ? ' on' : '');
+      saBtn.textContent = '全選択';
+      saBtn.addEventListener('click', function() {
+        var nowAll = cats.every(function(c){ return activeSet.has(c.code); });
+        if (nowAll) { cats.forEach(function(c){ activeSet.delete(c.code); }); btns.forEach(function(b){ b.classList.remove('on',cls,'month-hl'); }); saBtn.className='fp-sel'; }
+        else { cats.forEach(function(c){ activeSet.add(c.code); }); btns.forEach(function(b){ b.classList.add('on',cls); }); saBtn.className='fp-sel on'; }
+        pcUpdateSelAll(); updateMarkers();
+      });
+      hdr.appendChild(saBtn);
+      bodyWrap.appendChild(hdr);
       var rows = [];
       for (var i=0; i<btns.length; i+=4) rows.push(btns.slice(i,i+4));
       rows.forEach(function(row, ri) {
         var sec = document.createElement('div');
-        sec.className = (ri===0 ? 'fp-grid-sec sep' : 'fp-grid-sec no-lbl');
+        sec.className = 'fp-grid-sec no-lbl';
         if (ri > 0) sec.style.paddingTop = '0';
-        if (ri === 0) {
-          saBtn = document.createElement('div');
-          saBtn.className = 'fp-sel' + (allOn ? ' on' : '');
-          saBtn.textContent = '全選択';
-          saBtn.addEventListener('click', function() {
-            var nowAll = cats.every(function(c){ return activeSet.has(c.code); });
-            if (nowAll) { cats.forEach(function(c){ activeSet.delete(c.code); }); btns.forEach(function(b){ b.classList.remove('on',cls,'month-hl'); }); saBtn.className='fp-sel'; }
-            else { cats.forEach(function(c){ activeSet.add(c.code); }); btns.forEach(function(b){ b.classList.add('on',cls); }); saBtn.className='fp-sel on'; }
-            pcUpdateSelAll(); updateMarkers();
-          });
-          sec.appendChild(saBtn);
-        }
         row.forEach(function(b){ sec.appendChild(b); });
         for (var j=row.length; j<4; j++) { var e=document.createElement('div'); e.className='fp-btn empty'; sec.appendChild(e); }
         bodyWrap.appendChild(sec);
