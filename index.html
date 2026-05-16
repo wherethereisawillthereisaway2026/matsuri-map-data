@@ -1911,9 +1911,15 @@ function showSearchResult(place) {
   HANA_CATS.forEach(function(c){ opts += '<option value="'+c.code+'">'+c.label+'</option>'; });
   opts += '</optgroup>';
 
+  window._pendingPlace = {
+    name: place.name, pref: pref, adr: adr,
+    pid:  place.place_id||'',
+    lat:  place.geometry.location.lat(),
+    lng:  place.geometry.location.lng()
+  };
   var div = document.createElement('div');
   div.className = 'add-popup';
-  var mapUrl = place.place_id 
+  var mapUrl = place.place_id
     ? "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(place.name) + "&query_place_id=" + place.place_id
     : "https://www.google.com/maps?q=" + place.geometry.location.lat() + "," + place.geometry.location.lng();
   div.innerHTML =
@@ -1928,14 +1934,7 @@ function showSearchResult(place) {
     + "<input type='text' id='add-date-input' placeholder='開催日 例: 7月15日〜16日'>"
     + "<input type='text' id='add-url-input' placeholder='公式URL (https://...)'>"
     + "<textarea id='add-memo-input' rows='2' placeholder='メモ'></textarea>"
-    + "<button class='add-popup btn-add' id='add-submit-btn' onclick='addToFESDB(" + JSON.stringify({
-        name: place.name,
-        pref: pref,
-        adr:  adr,
-        pid:  place.place_id||'',
-        lat:  place.geometry.location.lat(),
-        lng:  place.geometry.location.lng()
-      }) + ")'>📌 FESDBに追加</button>"
+    + "<button class='add-popup btn-add' id='add-submit-btn' onclick='addToFESDB(window._pendingPlace)'>📌 FESDBに追加</button>"
     + "<button class='add-popup btn-cancel' onclick='closeSearch()'>キャンセル</button>";
 
   infoWindow.setContent(div);
