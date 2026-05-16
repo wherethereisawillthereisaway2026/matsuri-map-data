@@ -457,15 +457,7 @@ function buildPanel() {
     acPC.addListener('place_changed', function() { showSearchResult(acPC.getPlace()); });
   }, 500);
 
-  pcSearchBtn.addEventListener('click', function() {
-    var svc = new google.maps.places.PlacesService(map);
-    svc.findPlaceFromQuery({
-      query: pcInput.value,
-      fields:['name','place_id','geometry','address_components','formatted_address']
-    }, function(results, status) {
-      if (status === google.maps.places.PlacesServiceStatus.OK && results[0]) showSearchResult(results[0]);
-    });
-  });
+  pcSearchBtn.addEventListener('click', function() { _doSearch(pcInput.value.trim()); });
   pcInput.addEventListener('keydown', function(e){ if(e.key==='Enter') pcSearchBtn.click(); });
 
   var pcSatBtn = document.createElement('button');
@@ -798,6 +790,38 @@ function openLightPollutionMap() {
   window.open('https://www.lightpollutionmap.info/#zoom=' + zoom + '&lat=' + lat + '&lon=' + lon + '&state=' + state, '_blank');
 }
 
+// 座標文字列パーサー（DMS / 十進数 両対応）
+function _parseCoords(q) {
+  var d = q.match(/(\d+)[°º](\d+)['''′]([0-9.]+)["""″]([NS])[,\s]+(\d+)[°º](\d+)['''′]([0-9.]+)["""″]([EW])/i);
+  if (d) {
+    var lat = +d[1] + +d[2]/60 + +d[3]/3600; if (/S/i.test(d[4])) lat = -lat;
+    var lng = +d[5] + +d[6]/60 + +d[7]/3600; if (/W/i.test(d[8])) lng = -lng;
+    return {lat:lat, lng:lng};
+  }
+  var m = q.match(/^(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)$/);
+  if (m && Math.abs(+m[1]) <= 90 && Math.abs(+m[2]) <= 180) return {lat:+m[1], lng:+m[2]};
+  return null;
+}
+
+function _doSearch(q, inputEl) {
+  if (!q) return;
+  var c = _parseCoords(q);
+  if (c) {
+    var ll = new google.maps.LatLng(c.lat, c.lng);
+    map.setCenter(ll); map.setZoom(16);
+    showSearchResult({geometry:{location:ll}, name:q, place_id:null, formatted_address:c.lat.toFixed(6)+', '+c.lng.toFixed(6), address_components:[]});
+    return;
+  }
+  new google.maps.Geocoder().geocode({address: q, region: 'JP'}, function(results, status) {
+    if (status === 'OK' && results[0]) {
+      var r = results[0];
+      showSearchResult({geometry: r.geometry, name: q, place_id: r.place_id, formatted_address: r.formatted_address, address_components: r.address_components});
+    } else {
+      alert('検索エラー [' + status + ']\n"' + q + '"');
+    }
+  });
+}
+
 function initMap() {
   // doGetから注入された相互リンクパラメータを優先チェック
   var fromLink = typeof _xLat !== 'undefined';
@@ -860,13 +884,10 @@ function initMap() {
     searchMarkers = [];
     if (e.placeId) {
       e.stop();
-      var svc = new google.maps.places.PlacesService(map);
-      svc.getDetails({
-        placeId: e.placeId,
-        fields: ['name','place_id','geometry','address_components','formatted_address']
-      }, function(place, status) {
-        if (status === google.maps.places.PlacesServiceStatus.OK) {
-          showSearchResult(place);
+      new google.maps.Geocoder().geocode({placeId: e.placeId}, function(results, status) {
+        if (status === 'OK' && results[0]) {
+          var r = results[0];
+          showSearchResult({geometry: r.geometry, name: r.address_components && r.address_components.length ? r.address_components[0].long_name : r.formatted_address, place_id: r.place_id, formatted_address: r.formatted_address, address_components: r.address_components});
         }
       });
     }
@@ -931,15 +952,7 @@ function initMap() {
     });
     acBS.addListener('place_changed', function() { showSearchResult(acBS.getPlace()); });
     
-    bsSearchBtn.addEventListener('click', function() {
-      var svc = new google.maps.places.PlacesService(map);
-      svc.findPlaceFromQuery({
-        query: bsInput.value,
-        fields:['name','place_id','geometry','address_components','formatted_address']
-      }, function(results, status) {
-        if (status === google.maps.places.PlacesServiceStatus.OK && results[0]) showSearchResult(results[0]);
-      });
-    });
+    bsSearchBtn.addEventListener('click', function() { _doSearch(bsInput.value.trim()); });
     bsInput.addEventListener('keydown', function(e){ if(e.key==='Enter') bsSearchBtn.click(); });
     bsWrap.appendChild(searchBoxBS);
 
@@ -1150,15 +1163,7 @@ function initMap() {
     }
   }, 500);
 
-  mSearchBtn.addEventListener('click', function() {
-    var svc = new google.maps.places.PlacesService(map);
-    svc.findPlaceFromQuery({
-      query: mInput.value,
-      fields:['name','place_id','geometry','address_components','formatted_address']
-    }, function(results, status) {
-      if (status === google.maps.places.PlacesServiceStatus.OK && results[0]) showSearchResult(results[0]);
-    });
-  });
+  mSearchBtn.addEventListener('click', function() { _doSearch(mInput.value.trim()); });
   mInput.addEventListener('keydown', function(e){ if(e.key==='Enter') mSearchBtn.click(); });
 
   var mSatBtn = document.createElement('button');
