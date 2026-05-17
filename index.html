@@ -286,6 +286,13 @@ var SAT_CATS = [
 ];
 
 var iconCache = {};
+var CAT_DEFAULT_MONTHS = {
+  12:[5,6], 13:[10,11], 14:[9,10,11], 22:[9,10], 11:[5,9], 15:[1,2], 46:[6,7,8,9],
+  82:[11,12,1,2,3], 81:[12,1,2], 70:[12,1,2], 71:[1,2], 72:[2,3], 62:[2,3],
+  73:[2,3,4], 61:[2,3,4], 10:[3,4], 63:[4,5], 74:[4,5], 75:[4,5], 64:[4,5],
+  24:[6,7], 76:[6], 77:[6,7], 78:[7,8], 65:[5,6,7,8], 66:[7,8],
+  67:[9], 79:[9,10], 68:[10], 80:[10], 69:[10,11]
+};
 var MONTH_COLORS = {
   1:'#FF6B6B',2:'#FF8C42',3:'#FFD93D',4:'#6BCB77',
   5:'#4D96FF',6:'#9D84B7',7:'#FF69B4',8:'#FF4500',
@@ -1943,8 +1950,9 @@ function showSearchResult(place) {
 }
 
 function onAddCatChange(val) {
-  var isOB  = (val === '47');
-  var isSUP = (val === '46');
+  var isOB     = (val === '47');
+  var code     = parseInt(val) || 0;
+  var defMonths = CAT_DEFAULT_MONTHS[code];
   // 展望台固有フィールド
   var toiletEl = document.getElementById('add-toilet-dist');
   if (toiletEl) toiletEl.style.display = isOB ? 'block' : 'none';
@@ -1954,11 +1962,14 @@ function onAddCatChange(val) {
     var el = document.getElementById(id);
     if (el) el.style.display = isOB ? 'none' : 'block';
   });
-  // 月セレクター: SUP時は非表示にして自動設定メッセージを出す
+  // 月セレクター: デフォルト月があるカテゴリは非表示にして自動設定メッセージを表示
   var monthSel    = document.getElementById('add-month-sel');
   var supMonthMsg = document.getElementById('add-sup-month-msg');
-  if (monthSel)    monthSel.style.display    = (isOB || isSUP) ? 'none' : 'block';
-  if (supMonthMsg) supMonthMsg.style.display = isSUP ? 'block' : 'none';
+  if (monthSel)    monthSel.style.display    = (isOB || defMonths) ? 'none' : 'block';
+  if (supMonthMsg) {
+    supMonthMsg.style.display = defMonths ? 'block' : 'none';
+    if (defMonths) supMonthMsg.textContent = '🗓 ' + defMonths.join('・') + '月を自動設定';
+  }
   // ボタン文言
   var btn = document.getElementById('add-submit-btn');
   if (btn) btn.textContent = isOB ? '🗼 OBシートに追加' : '📌 FESDBに追加';
@@ -1976,7 +1987,7 @@ function addToFESDB(place) {
   var urlInput  = document.getElementById('add-url-input');
   var memoInput = document.getElementById('add-memo-input');
   var month       = monthSel  ? (parseInt(monthSel.value) || 0) : 0;
-  if (code === 46) month = [6,7,8,9]; // SUP: 夏季固定
+  if (CAT_DEFAULT_MONTHS[code]) month = CAT_DEFAULT_MONTHS[code];
   var dateVal     = dateInput ? dateInput.value.trim() : '';
   var officialUrl = urlInput  ? urlInput.value.trim()  : '';
   var memo        = memoInput ? memoInput.value.trim()  : '';
