@@ -640,7 +640,7 @@ function buildPanel() {
   pcMoonBtn.textContent = getMoonEmoji(moonAge) + ' ' + Math.floor(moonAge) + '日';
   pcMoonBtn.title = '月齢カレンダー';
   pcMoonBtn.style.cssText = 'padding:6px 8px;background:#fff;color:#555;border:1.5px solid #aaa;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;white-space:nowrap;';
-  pcMoonBtn.addEventListener('click', openMoonCalendar);
+  pcMoonBtn.addEventListener('click', showSunMoonInfo);
 
   linkRow.appendChild(_pcUndoBtn);
   linkRow.appendChild(linkBtn);
@@ -820,8 +820,49 @@ function getMoonEmoji(age) {
   if (age < 23.99) return '🌗';
   return '🌘';
 }
-function openMoonCalendar() {
-  window.open('https://koyomi8.com/moonage.html', '_blank');
+function showSunMoonInfo() {
+  var center = map.getCenter();
+  var lat = center.lat(), lng = center.lng();
+  var now = new Date();
+  function _fmt(d) {
+    if (!d || isNaN(d.getTime())) return '--:--';
+    return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+  }
+  function _render() {
+    var sun  = SunCalc.getTimes(now, lat, lng);
+    var moon = SunCalc.getMoonTimes(now, lat, lng);
+    var age  = getMoonAge();
+    var mm = now.getMonth()+1, dd = now.getDate();
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9998;';
+    var box = document.createElement('div');
+    box.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:10px;padding:18px 22px 14px;box-shadow:0 6px 24px rgba(0,0,0,.35);z-index:9999;min-width:190px;font-family:sans-serif;';
+    box.innerHTML =
+      '<div style="font-weight:bold;font-size:14px;margin-bottom:10px;text-align:center;">' + mm + '月' + dd + '日</div>'
+      + '<table style="border-collapse:collapse;width:100%;font-size:13px;line-height:2;">'
+      + '<tr><td>🌅 日の出</td><td style="text-align:right;font-weight:bold;">' + _fmt(sun.sunrise) + '</td></tr>'
+      + '<tr><td>🌇 日の入</td><td style="text-align:right;font-weight:bold;">' + _fmt(sun.sunset) + '</td></tr>'
+      + '<tr><td>' + getMoonEmoji(age) + ' 月齢</td><td style="text-align:right;font-weight:bold;">' + age.toFixed(1) + ' 日</td></tr>'
+      + '<tr><td>🌙 月の出</td><td style="text-align:right;font-weight:bold;">' + _fmt(moon.rise) + '</td></tr>'
+      + '<tr><td>🌙 月の入</td><td style="text-align:right;font-weight:bold;">' + _fmt(moon.set) + '</td></tr>'
+      + '</table>'
+      + '<div style="display:flex;gap:8px;margin-top:14px;">'
+      + '<button onclick="window.open(\'https://koyomi8.com/moonage.html\',\'_blank\')" style="flex:1;padding:7px;background:#1a73e8;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:12px;font-weight:bold;">🗓 月齢カレンダー</button>'
+      + '<button id="_smClose" style="padding:7px 10px;background:#eee;color:#555;border:none;border-radius:5px;cursor:pointer;font-size:12px;">閉じる</button>'
+      + '</div>';
+    document.body.appendChild(overlay);
+    document.body.appendChild(box);
+    function _close() { overlay.remove(); box.remove(); }
+    box.querySelector('#_smClose').addEventListener('click', _close);
+    overlay.addEventListener('click', _close);
+  }
+  if (typeof SunCalc !== 'undefined') { _render(); }
+  else {
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js';
+    s.onload = _render;
+    document.head.appendChild(s);
+  }
 }
 
 // 座標文字列パーサー（DMS / 十進数 両対応）
@@ -1386,7 +1427,7 @@ function initMap() {
   mMoonBtn.textContent = getMoonEmoji(getMoonAge()) + ' ' + Math.floor(getMoonAge()) + '日';
   mMoonBtn.title = '月齢カレンダー';
   mMoonBtn.style.cssText = 'padding:7px 8px;background:#fff;color:#555;border:1.5px solid #aaa;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;white-space:nowrap;';
-  mMoonBtn.addEventListener('click', openMoonCalendar);
+  mMoonBtn.addEventListener('click', showSunMoonInfo);
 
   mLinkRow.appendChild(_mUndoBtn);
   mLinkRow.appendChild(mLinkBtn);
