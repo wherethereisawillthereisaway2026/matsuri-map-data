@@ -635,9 +635,17 @@ function buildPanel() {
   _pcUndoBtn.addEventListener('click', undoLastDelete);
   if (!isMaster) _pcUndoBtn.style.display = 'none';
 
+  var moonAge = getMoonAge();
+  var pcMoonBtn = document.createElement('button');
+  pcMoonBtn.textContent = getMoonEmoji(moonAge) + ' ' + Math.floor(moonAge) + '日';
+  pcMoonBtn.title = '月齢カレンダー';
+  pcMoonBtn.style.cssText = 'padding:6px 8px;background:#fff;color:#555;border:1.5px solid #aaa;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;white-space:nowrap;';
+  pcMoonBtn.addEventListener('click', openMoonCalendar);
+
   linkRow.appendChild(_pcUndoBtn);
   linkRow.appendChild(linkBtn);
   linkRow.appendChild(pollBtn);
+  linkRow.appendChild(pcMoonBtn);
   linkRow.appendChild(pcDot);
   container.appendChild(linkRow);
 
@@ -795,6 +803,25 @@ function openLightPollutionMap() {
   var zoom = map.getZoom().toFixed(2);
   var state = 'eyJiYXNlbWFwIjoiTGF5ZXJCaW5nUm9hZCIsIm92ZXJsYXkiOiJzYl8yMDI1Iiwib3ZlcmxheWNvbG9yIjpmYWxzZSwib3ZlcmxheW9wYWNpdHkiOiI2MCIsImZlYXR1cmVzb3BhY2l0eSI6Ijg1In0=';
   window.open('https://www.lightpollutionmap.info/#zoom=' + zoom + '&lat=' + lat + '&lon=' + lon + '&state=' + state, '_blank');
+}
+
+function getMoonAge() {
+  var known = new Date('2000-01-06T18:14:00Z');
+  var age = (Date.now() - known.getTime()) / 86400000 % 29.530588;
+  return age < 0 ? age + 29.530588 : age;
+}
+function getMoonEmoji(age) {
+  if (age < 1.85)  return '🌑';
+  if (age < 7.38)  return '🌒';
+  if (age < 9.22)  return '🌓';
+  if (age < 14.77) return '🌔';
+  if (age < 16.61) return '🌕';
+  if (age < 22.15) return '🌖';
+  if (age < 23.99) return '🌗';
+  return '🌘';
+}
+function openMoonCalendar() {
+  window.open('https://koyomi8.com/sub/moonage.htm', '_blank');
 }
 
 // 座標文字列パーサー（DMS / 十進数 両対応）
@@ -1355,9 +1382,16 @@ function initMap() {
   _mUndoBtn.addEventListener('click', undoLastDelete);
   if (!isMaster) _mUndoBtn.style.display = 'none';
 
+  var mMoonBtn = document.createElement('button');
+  mMoonBtn.textContent = getMoonEmoji(getMoonAge()) + ' ' + Math.floor(getMoonAge()) + '日';
+  mMoonBtn.title = '月齢カレンダー';
+  mMoonBtn.style.cssText = 'padding:7px 8px;background:#fff;color:#555;border:1.5px solid #aaa;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;white-space:nowrap;';
+  mMoonBtn.addEventListener('click', openMoonCalendar);
+
   mLinkRow.appendChild(_mUndoBtn);
   mLinkRow.appendChild(mLinkBtn);
   mLinkRow.appendChild(mPollBtn);
+  mLinkRow.appendChild(mMoonBtn);
   mLinkRow.appendChild(mDot);
 
   mRender();
