@@ -1931,6 +1931,7 @@ function showSearchResult(place) {
     + "<select id='add-month-sel'><option value='0'>月 (指定なし)</option>"
     + [1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){ return "<option value='"+m+"'>"+m+"月</option>"; }).join('')
     + "</select>"
+    + "<div id='add-sup-month-msg' style='display:none;font-size:11px;color:#1a73e8;padding:2px 0'>🏄 SUP: 夏季(6〜9月)を自動設定</div>"
     + "<input type='text' id='add-date-input' placeholder='開催日 例: 7月15日〜16日'>"
     + "<input type='text' id='add-url-input' placeholder='公式URL (https://...)'>"
     + "<textarea id='add-memo-input' rows='2' placeholder='メモ'></textarea>"
@@ -1942,16 +1943,22 @@ function showSearchResult(place) {
 }
 
 function onAddCatChange(val) {
-  var isOB = (val === '47');
+  var isOB  = (val === '47');
+  var isSUP = (val === '46');
   // 展望台固有フィールド
   var toiletEl = document.getElementById('add-toilet-dist');
   if (toiletEl) toiletEl.style.display = isOB ? 'block' : 'none';
   // FES固有フィールド（展望台では不要）
-  var fesOnly = ['add-month-sel', 'add-date-input', 'add-url-input'];
+  var fesOnly = ['add-date-input', 'add-url-input'];
   fesOnly.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.style.display = isOB ? 'none' : 'block';
   });
+  // 月セレクター: SUP時は非表示にして自動設定メッセージを出す
+  var monthSel    = document.getElementById('add-month-sel');
+  var supMonthMsg = document.getElementById('add-sup-month-msg');
+  if (monthSel)    monthSel.style.display    = (isOB || isSUP) ? 'none' : 'block';
+  if (supMonthMsg) supMonthMsg.style.display = isSUP ? 'block' : 'none';
   // ボタン文言
   var btn = document.getElementById('add-submit-btn');
   if (btn) btn.textContent = isOB ? '🗼 OBシートに追加' : '📌 FESDBに追加';
@@ -1969,6 +1976,7 @@ function addToFESDB(place) {
   var urlInput  = document.getElementById('add-url-input');
   var memoInput = document.getElementById('add-memo-input');
   var month       = monthSel  ? (parseInt(monthSel.value) || 0) : 0;
+  if (code === 46) month = [6,7,8,9]; // SUP: 夏季固定
   var dateVal     = dateInput ? dateInput.value.trim() : '';
   var officialUrl = urlInput  ? urlInput.value.trim()  : '';
   var memo        = memoInput ? memoInput.value.trim()  : '';
@@ -1991,7 +1999,8 @@ function addToFESDB(place) {
       })
       .catch(function(e){ alert('エラー: ' + e); });
   } else {
-    _gasPost({action: 'addRow', data: { name:place.name, pref:place.pref, adr:place.adr, pid:place.pid, lat:place.lat, lng:place.lng, category:code, month:month, date:dateVal, memo:memo, officialUrl:officialUrl }})
+    var monthGas = Array.isArray(month) ? month.join(',') : month;
+    _gasPost({action: 'addRow', data: { name:place.name, pref:place.pref, adr:place.adr, pid:place.pid, lat:place.lat, lng:place.lng, category:code, month:monthGas, date:dateVal, memo:memo, officialUrl:officialUrl }})
       .then(function(res) {
         if (res.ok) {
           var addBtn = document.querySelector('.btn-add');
