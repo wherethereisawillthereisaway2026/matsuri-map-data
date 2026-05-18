@@ -805,6 +805,8 @@ function loadFilterState() {
 function openMapLink(url) {
   var center = map.getCenter();
   var params = '?lat=' + center.lat().toFixed(5) + '&lng=' + center.lng().toFixed(5) + '&z=' + map.getZoom();
+  var m = new URLSearchParams(location.search).get('m');
+  if (m) params += '&m=' + encodeURIComponent(m);
   window.open(url + params, '_blank');
 }
 
