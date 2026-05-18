@@ -1006,7 +1006,13 @@ function initMap() {
     }, function(){ alert('位置情報を取得できませんでした'); });
   }
 
-  loadFilterState();
+  if (!loadFilterState()) {
+    for (var i = 1; i <= 12; i++) activeMonths.add(i);
+    NAT_CATS.forEach(function(c){ activeNat.add(c.code); });
+    HIS_CATS.forEach(function(c){ activeHis.add(c.code); });
+    SAT_CATS.forEach(function(c){ activeSat.add(c.code); });
+    HANA_CATS.forEach(function(c){ activeHana.add(c.code); });
+  }
   document.body.appendChild(buildPanel());
 
   // スマホ用ボトムシート
