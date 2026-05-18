@@ -747,7 +747,7 @@ function filterDeletedPins(data) {
 function saveDataCache(data, writeProtect) {
   try {
     var entry = {ts: Date.now(), data: filterDeletedPins(data)};
-    if (writeProtect) entry.writeProtectedUntil = Date.now() + 5 * 60 * 1000;
+    if (writeProtect) entry.writeProtectedUntil = Date.now() + 10 * 60 * 1000;
     localStorage.setItem(DATA_CACHE_KEY, JSON.stringify(entry));
   } catch(e) {}
 }
