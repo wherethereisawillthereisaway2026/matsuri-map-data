@@ -190,7 +190,8 @@ body{margin:0;padding:0;font-family:sans-serif;}
 <script>
 var MY_API_KEY = "AIzaSyAMBPa_T_URVyJNn1lHnXjzDiEZoKPNPSw";
 var GAS_URL    = 'https://script.google.com/macros/s/AKfycbw0HVTw6Ztf-CSv_rJ7Tu4cpb2Qd4ISwy6JCph-fGTXfkxmvJtViUx7YUZ3ml92aBwd/exec';
-var SH_MAP_URL = 'https://wherethereisawillthereisaway2026.github.io/shakuhachi-map-data/';
+var SH_MAP_URL    = 'https://wherethereisawillthereisaway2026.github.io/shakuhachi-map-data/';
+var FOODS_MAP_URL = 'https://wherethereisawillthereisaway2026.github.io/foods-map-data/';
 function _gasPost(payload) {
   return fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) }).then(function(r){ return r.json(); });
 }
@@ -612,14 +613,23 @@ function buildPanel() {
   var linkRow = document.createElement('div');
   linkRow.style.cssText = 'display:flex;gap:4px;margin-top:6px;align-items:center;';
 
-  var linkBtn = document.createElement('button');
-  linkBtn.textContent = '🚐 車中泊マップ';
-  linkBtn.style.cssText = 'flex:1;padding:6px;background:#fff;color:#1a73e8;border:1.5px solid #1a73e8;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;';
-  linkBtn.addEventListener('click', openOtherMap);
+  var shBtn = document.createElement('button');
+  shBtn.textContent = '🚐車中泊';
+  shBtn.style.cssText = 'flex:1;padding:6px;background:#fff;color:#1a73e8;border:1.5px solid #1a73e8;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;';
+  shBtn.addEventListener('click', function(){ openMapLink(SH_MAP_URL); });
+
+  var fesActiveBtn = document.createElement('button');
+  fesActiveBtn.textContent = '🏮祭り';
+  fesActiveBtn.style.cssText = 'flex:1;padding:6px;background:#1a73e8;color:#fff;border:1.5px solid #1a73e8;border-radius:4px;cursor:default;font-size:12px;font-weight:bold;';
+
+  var foodsBtn = document.createElement('button');
+  foodsBtn.textContent = '🍚飯';
+  foodsBtn.style.cssText = 'flex:1;padding:6px;background:#fff;color:#1a73e8;border:1.5px solid #1a73e8;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;';
+  foodsBtn.addEventListener('click', function(){ openMapLink(FOODS_MAP_URL); });
 
   var pollBtn = document.createElement('button');
-  pollBtn.textContent = '🌃 光害マップ';
-  pollBtn.style.cssText = 'flex:1;padding:6px;background:#fff;color:#555;border:1.5px solid #aaa;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;';
+  pollBtn.textContent = '🌃光害';
+  pollBtn.style.cssText = 'padding:6px;background:#fff;color:#555;border:1.5px solid #aaa;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;';
   pollBtn.addEventListener('click', openLightPollutionMap);
 
   var pcDot = document.createElement('div');
@@ -643,7 +653,9 @@ function buildPanel() {
   pcMoonBtn.addEventListener('click', showSunMoonInfo);
 
   linkRow.appendChild(_pcUndoBtn);
-  linkRow.appendChild(linkBtn);
+  linkRow.appendChild(shBtn);
+  linkRow.appendChild(fesActiveBtn);
+  linkRow.appendChild(foodsBtn);
   linkRow.appendChild(pollBtn);
   linkRow.appendChild(pcMoonBtn);
   linkRow.appendChild(pcDot);
@@ -790,10 +802,10 @@ function loadFilterState() {
   } catch(e) { return false; }
 }
 
-function openOtherMap() {
+function openMapLink(url) {
   var center = map.getCenter();
   var params = '?lat=' + center.lat().toFixed(5) + '&lng=' + center.lng().toFixed(5) + '&z=' + map.getZoom();
-  window.open(SH_MAP_URL + params, '_blank');
+  window.open(url + params, '_blank');
 }
 
 function openLightPollutionMap() {
@@ -1400,14 +1412,23 @@ function initMap() {
   var mLinkRow = document.createElement('div');
   mLinkRow.style.cssText = 'padding:6px 8px;border-top:1px solid #eee;display:flex;gap:4px;align-items:center;';
 
-  var mLinkBtn = document.createElement('button');
-  mLinkBtn.textContent = '🚐 車中泊マップ';
-  mLinkBtn.style.cssText = 'flex:1;padding:7px;background:#fff;color:#1a73e8;border:1.5px solid #1a73e8;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;';
-  mLinkBtn.addEventListener('click', openOtherMap);
+  var mShBtn = document.createElement('button');
+  mShBtn.textContent = '🚐車中泊';
+  mShBtn.style.cssText = 'flex:1;padding:7px;background:#fff;color:#1a73e8;border:1.5px solid #1a73e8;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;';
+  mShBtn.addEventListener('click', function(){ openMapLink(SH_MAP_URL); });
+
+  var mFesActiveBtn = document.createElement('button');
+  mFesActiveBtn.textContent = '🏮祭り';
+  mFesActiveBtn.style.cssText = 'flex:1;padding:7px;background:#1a73e8;color:#fff;border:1.5px solid #1a73e8;border-radius:4px;cursor:default;font-size:12px;font-weight:bold;';
+
+  var mFoodsBtn = document.createElement('button');
+  mFoodsBtn.textContent = '🍚飯';
+  mFoodsBtn.style.cssText = 'flex:1;padding:7px;background:#fff;color:#1a73e8;border:1.5px solid #1a73e8;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;';
+  mFoodsBtn.addEventListener('click', function(){ openMapLink(FOODS_MAP_URL); });
 
   var mPollBtn = document.createElement('button');
-  mPollBtn.textContent = '🌃 光害マップ';
-  mPollBtn.style.cssText = 'flex:1;padding:7px;background:#fff;color:#555;border:1.5px solid #aaa;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;';
+  mPollBtn.textContent = '🌃光害';
+  mPollBtn.style.cssText = 'padding:7px;background:#fff;color:#555;border:1.5px solid #aaa;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;';
   mPollBtn.addEventListener('click', openLightPollutionMap);
 
   var mDot = document.createElement('div');
@@ -1430,7 +1451,9 @@ function initMap() {
   mMoonBtn.addEventListener('click', showSunMoonInfo);
 
   mLinkRow.appendChild(_mUndoBtn);
-  mLinkRow.appendChild(mLinkBtn);
+  mLinkRow.appendChild(mShBtn);
+  mLinkRow.appendChild(mFesActiveBtn);
+  mLinkRow.appendChild(mFoodsBtn);
   mLinkRow.appendChild(mPollBtn);
   mLinkRow.appendChild(mMoonBtn);
   mLinkRow.appendChild(mDot);
