@@ -1599,6 +1599,13 @@ function createMarkerForPoint(p) {
     var rowIdx  = p.rowIndex;
     var isFESDB = !p.source;
 
+    var extUrlsHtml = memoUrls.map(function(u){
+      return "<div class='ext-url-row' style='display:flex;gap:4px;margin-bottom:3px;'>"
+        + "<input type='text' class='ext-url-input' value='" + u.replace(/'/g,"&#39;") + "' placeholder='https://...' style='flex:1;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:12px;box-sizing:border-box;'>"
+        + "<button onclick='this.parentElement.remove()' style='padding:2px 8px;background:#fff;color:#ea4335;border:1px solid #ea4335;border-radius:4px;cursor:pointer;font-size:11px;'>✕</button>"
+        + "</div>";
+    }).join('');
+
     var titleLink = getMapUrl(p);
 
     var div = document.createElement('div');
@@ -1635,6 +1642,9 @@ function createMarkerForPoint(p) {
           ? "<div id='memo-area-" + rowIdx + "' style='display:none;margin-top:4px;'>"
             + "<input type='text' id='url-" + rowIdx + "' placeholder='公式URL' value=\"" + urlVal + "\" style='width:100%;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:12px;box-sizing:border-box;margin-bottom:4px;'>"
             + "<textarea id='memo-" + rowIdx + "' rows='2' style='width:100%;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:12px;box-sizing:border-box;resize:vertical;'>" + memoVal + "</textarea>"
+            + "<div style='font-size:11px;color:#888;margin:4px 0 2px;'>🔗 外部リンク</div>"
+            + "<div id='ext-urls-" + rowIdx + "' style='margin-bottom:4px;'>" + extUrlsHtml + "</div>"
+            + "<button onclick='addExtUrlInput(" + rowIdx + ")' style='width:100%;padding:4px;background:#fff;color:#1a73e8;border:1px solid #1a73e8;border-radius:4px;cursor:pointer;font-size:11px;margin-bottom:4px;'>＋ 外部リンクを追加</button>"
             + "<button id='savememo-btn-" + rowIdx + "' onclick='saveMemo(" + rowIdx + ")' style='width:100%;padding:5px;background:#34a853;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;margin-bottom:6px;'>保存</button>"
             + (isFESDB
               ? "<hr style='margin:4px 0 6px;border:none;border-top:1px solid #eee;'>"
@@ -1825,12 +1835,33 @@ function saveLocation(rowIdx) {
     .catch(function(e) { alert('エラー: ' + e); if (btn) { btn.textContent = '位置を保存'; btn.disabled = false; } });
 }
 
+function addExtUrlInput(rowIdx) {
+  var container = document.getElementById('ext-urls-' + rowIdx);
+  if (!container) return;
+  var row = document.createElement('div');
+  row.className = 'ext-url-row';
+  row.style.cssText = 'display:flex;gap:4px;margin-bottom:3px;';
+  row.innerHTML = "<input type='text' class='ext-url-input' placeholder='https://...' style='flex:1;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:12px;box-sizing:border-box;'>"
+    + "<button onclick='this.parentElement.remove()' style='padding:2px 8px;background:#fff;color:#ea4335;border:1px solid #ea4335;border-radius:4px;cursor:pointer;font-size:11px;'>✕</button>";
+  container.appendChild(row);
+  row.querySelector('input').focus();
+}
+
 function saveMemo(rowIdx) {
   var ta = document.getElementById('memo-' + rowIdx);
   var urlInput = document.getElementById('url-' + rowIdx);
   var btn = document.getElementById('savememo-btn-' + rowIdx);
   if (!ta) return;
-  var memo = ta.value;
+  var memoText = ta.value.trim();
+  var extContainer = document.getElementById('ext-urls-' + rowIdx);
+  var extUrls = [];
+  if (extContainer) {
+    extContainer.querySelectorAll('.ext-url-input').forEach(function(inp) {
+      var v = inp.value.trim();
+      if (v) extUrls.push(v);
+    });
+  }
+  var memo = memoText + (extUrls.length ? (memoText ? '\n' : '') + extUrls.join('\n') : '');
   var url = urlInput ? urlInput.value.trim() : '';
   if (btn) { btn.textContent = '保存中...'; btn.disabled = true; }
   _gasPost({action: 'updateMemoAndUrl', rowIndex: rowIdx, memo: memo, url: url})
