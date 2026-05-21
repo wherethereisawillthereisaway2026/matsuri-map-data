@@ -777,7 +777,7 @@ var FILTER_CACHE_KEY = 'fesFilterState_v2';
 
 function saveFilterState() {
   try {
-    localStorage.setItem(FILTER_CACHE_KEY, JSON.stringify({
+    sessionStorage.setItem(FILTER_CACHE_KEY, JSON.stringify({
       months: Array.from(activeMonths),
       nat: Array.from(activeNat),
       his: Array.from(activeHis),
@@ -789,7 +789,7 @@ function saveFilterState() {
 
 function loadFilterState() {
   try {
-    var raw = localStorage.getItem(FILTER_CACHE_KEY);
+    var raw = sessionStorage.getItem(FILTER_CACHE_KEY);
     if (!raw) return false;
     var s = JSON.parse(raw);
     if (!s) return false;
