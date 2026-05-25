@@ -1561,8 +1561,10 @@ function createMarkerForPoint(p) {
 
     var dateText = p.date || '';
     // URLの末尾を括弧・引用符・日本語文字などで打ち切る、より正確なパターン
-    var urlPattern = /(https?:\/\/[^\s'"<>\u3000-\u9fff\uff00-\uffef\u30a0-\u30ff\u3040-\u309f]+)/g;
-    var extractedUrls = dateText.match(urlPattern) || [];
+    var urlPattern = /(https?:\/\/(?:(?!https?:\/\/)[^\s'"<>\u3000-\u9fff\uff00-\uffef\u30a0-\u30ff\u3040-\u309f])+)/g;
+    var extractedUrls = (dateText.match(urlPattern) || []).filter(function(u) {
+      return !/\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(u) && !/maps\.google\.com/i.test(u);
+    });
     var cleanDate = dateText.replace(urlPattern, '').trim();
 
     var catOptions = '<option value="">-- 変更しない --</option>';
@@ -1592,8 +1594,8 @@ function createMarkerForPoint(p) {
     });
 
     var memoRaw = p.memo || '';
-    var memoUrls = memoRaw.match(/(https?:\/\/[^\s'"<>\u3000-\u9fff\uff00-\uffef\u30a0-\u30ff\u3040-\u309f]+)/g) || [];
-    var cleanMemo = memoRaw.replace(/(https?:\/\/[^\s'"<>\u3000-\u9fff\uff00-\uffef\u30a0-\u30ff\u3040-\u309f]+)/g, '').trim();
+    var memoUrls = memoRaw.match(/(https?:\/\/(?:(?!https?:\/\/)[^\s'"<>\u3000-\u9fff\uff00-\uffef\u30a0-\u30ff\u3040-\u309f])+)/g) || [];
+    var cleanMemo = memoRaw.replace(/(https?:\/\/(?:(?!https?:\/\/)[^\s'"<>\u3000-\u9fff\uff00-\uffef\u30a0-\u30ff\u3040-\u309f])+)/g, '').trim();
     var memoVal = cleanMemo.replace(/'/g, "&#39;");
     var urlVal  = (p.officialUrl || '').replace(/'/g, "&#39;").replace(/"/g, "&quot;");
     var pidVal  = (p.placeId || '').replace(/"/g, "&quot;");
