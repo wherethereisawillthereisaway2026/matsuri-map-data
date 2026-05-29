@@ -192,6 +192,7 @@ var MY_API_KEY = "AIzaSyAMBPa_T_URVyJNn1lHnXjzDiEZoKPNPSw";
 var GAS_URL    = 'https://script.google.com/macros/s/AKfycbw0HVTw6Ztf-CSv_rJ7Tu4cpb2Qd4ISwy6JCph-fGTXfkxmvJtViUx7YUZ3ml92aBwd/exec';
 var SH_MAP_URL    = 'https://wherethereisawillthereisaway2026.github.io/shakuhachi-map-data/';
 var FOODS_MAP_URL = 'https://wherethereisawillthereisaway2026.github.io/foods-map-data/';
+var FERRY_MAP_URL = 'https://wherethereisawillthereisaway2026.github.io/car-ferry-map/';
 function _gasPost(payload) {
   return fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) }).then(function(r){ return r.json(); });
 }
@@ -657,13 +658,22 @@ function buildPanel() {
   pcMoonBtn.addEventListener('click', showSunMoonInfo);
 
   linkRow.appendChild(_pcUndoBtn);
-  linkRow.appendChild(shBtn);
-  linkRow.appendChild(fesActiveBtn);
-  linkRow.appendChild(foodsBtn);
   linkRow.appendChild(pollBtn);
   linkRow.appendChild(pcMoonBtn);
   linkRow.appendChild(pcDot);
   container.appendChild(linkRow);
+
+  var linkRow2 = document.createElement('div');
+  linkRow2.style.cssText = 'display:flex;gap:4px;margin-top:4px;align-items:center;';
+  linkRow2.appendChild(shBtn);
+  linkRow2.appendChild(fesActiveBtn);
+  linkRow2.appendChild(foodsBtn);
+  var ferryBtn = document.createElement('button');
+  ferryBtn.textContent = '⚓フェリー';
+  ferryBtn.style.cssText = 'flex:1;padding:6px;background:#fff;color:#1a73e8;border:1.5px solid #1a73e8;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;';
+  ferryBtn.addEventListener('click', function(){ openMapLink(FERRY_MAP_URL); });
+  linkRow2.appendChild(ferryBtn);
+  container.appendChild(linkRow2);
 
   return container;
 }
@@ -811,7 +821,7 @@ function openMapLink(url) {
   var params = '?lat=' + center.lat().toFixed(5) + '&lng=' + center.lng().toFixed(5) + '&z=' + map.getZoom();
   var m = new URLSearchParams(location.search).get('m');
   if (m) params += '&m=' + encodeURIComponent(m);
-  window.open(url + params, '_blank');
+  window.location.href = url + params;
 }
 
 function openLightPollutionMap() {
@@ -1463,17 +1473,26 @@ function initMap() {
   mMoonBtn.addEventListener('click', showSunMoonInfo);
 
   mLinkRow.appendChild(_mUndoBtn);
-  mLinkRow.appendChild(mShBtn);
-  mLinkRow.appendChild(mFesActiveBtn);
-  mLinkRow.appendChild(mFoodsBtn);
   mLinkRow.appendChild(mPollBtn);
   mLinkRow.appendChild(mMoonBtn);
   mLinkRow.appendChild(mDot);
+
+  var mLinkRow2 = document.createElement('div');
+  mLinkRow2.style.cssText = 'padding:2px 8px 6px;border-top:none;display:flex;gap:4px;align-items:center;background:#fff;';
+  mLinkRow2.appendChild(mShBtn);
+  mLinkRow2.appendChild(mFesActiveBtn);
+  mLinkRow2.appendChild(mFoodsBtn);
+  var mFerryBtn = document.createElement('button');
+  mFerryBtn.textContent = '⚓フェリー';
+  mFerryBtn.style.cssText = 'flex:1;padding:7px;background:#fff;color:#1a73e8;border:1.5px solid #1a73e8;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;';
+  mFerryBtn.addEventListener('click', function(){ openMapLink(FERRY_MAP_URL); });
+  mLinkRow2.appendChild(mFerryBtn);
 
   mRender();
   menuWrap.appendChild(menuTop);
   menuWrap.appendChild(menuBody);
   menuWrap.appendChild(mLinkRow);
+  menuWrap.appendChild(mLinkRow2);
   document.body.appendChild(menuWrap);
 
   // ?nocache=1 でlocalStorageデータキャッシュを強制クリア
