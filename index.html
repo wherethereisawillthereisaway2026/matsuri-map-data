@@ -929,9 +929,7 @@ function _doSearch(q, inputEl) {
 function initMap() {
   // doGetから注入された相互リンクパラメータを優先チェック
   var fromLink = typeof _xLat !== 'undefined';
-  // 同タブ内で既に相互リンク座標を適用済みかチェック（リロード時はlocalStorageを優先）
-  var isFirstCrossLink = fromLink && !sessionStorage.getItem('fesCrossLinkApplied');
-  if (isFirstCrossLink) sessionStorage.setItem('fesCrossLinkApplied', '1');
+  var isFirstCrossLink = fromLink;
 
   var savedState = isFirstCrossLink ? null : loadMapState();
   var initialLat = isFirstCrossLink ? _xLat : (savedState ? savedState.lat : 36.5);
