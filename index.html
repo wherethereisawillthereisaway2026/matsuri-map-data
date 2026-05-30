@@ -149,7 +149,7 @@ body{margin:0;padding:0;font-family:sans-serif;}
 .m-kind.mat.on{background:#FF8C42;color:#fff;}
 .m-kind.han{border:2px solid #FF4500;color:#FF4500;}
 .m-kind.han.on{background:#FF4500;color:#fff;}
-@media(min-width:601px){
+@media(orientation:landscape) and (min-width:601px){
   .fp{display:block !important;}
   .menu-wrap{display:none !important;}
   .fp-grid-sec{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;padding:3px 4px;}
@@ -177,7 +177,7 @@ body{margin:0;padding:0;font-family:sans-serif;}
 }
 .m-btn.on.mo{background:#5C6BC0;color:#fff;border-color:#5C6BC0;}
 .m-btn.month-hl{outline:2px solid #FF8C00;outline-offset:-2px;}
-@media(max-width:600px){.fp{display:none !important;}.bs-wrap{display:none !important;}.menu-wrap{display:block !important;}}
+@media(max-width:600px),(orientation:portrait){.fp{display:none !important;}.bs-wrap{display:none !important;}.menu-wrap{display:block !important;}}
 @keyframes loadPulse{0%,100%{opacity:1}50%{opacity:.25}}
 .load-dot{width:12px;height:12px;border-radius:50%;background:#bbb;animation:loadPulse 1.2s infinite;flex-shrink:0;align-self:center;cursor:default;}
 .load-dot.done{background:#4caf50;animation:none;}
