@@ -1335,6 +1335,7 @@ function initMap() {
   function mRender() {
     menuBody.innerHTML = '';
     catBtnRefs = {};
+    var cols = (window.innerWidth >= 768) ? 6 : 4;
 
     function makeMonthSec(months) {
       var sec = document.createElement('div');
@@ -1352,9 +1353,14 @@ function initMap() {
       });
       return sec;
     }
-    menuBody.appendChild(makeMonthSec([1,2,3,4]));
-    menuBody.appendChild(makeMonthSec([5,6,7,8]));
-    menuBody.appendChild(makeMonthSec([9,10,11,12]));
+    if (cols === 6) {
+      menuBody.appendChild(makeMonthSec([1,2,3,4,5,6]));
+      menuBody.appendChild(makeMonthSec([7,8,9,10,11,12]));
+    } else {
+      menuBody.appendChild(makeMonthSec([1,2,3,4]));
+      menuBody.appendChild(makeMonthSec([5,6,7,8]));
+      menuBody.appendChild(makeMonthSec([9,10,11,12]));
+    }
 
     function makeCatRows(cats, activeSet, cls, isFirst) {
       var allOn = cats.every(function(c){ return activeSet.has(c.code); });
@@ -1389,13 +1395,13 @@ function initMap() {
       menuBody.appendChild(hdr);
 
       var rows = [];
-      for (var i=0; i<btns.length; i+=4) rows.push(btns.slice(i,i+4));
+      for (var i=0; i<btns.length; i+=cols) rows.push(btns.slice(i,i+cols));
       rows.forEach(function(row, ri) {
         var sec = document.createElement('div');
         sec.className = 'menu-section';
         if (ri > 0) sec.style.paddingTop = '0';
         row.forEach(function(b){ sec.appendChild(b); });
-        for (var j=row.length; j<4; j++) { var e=document.createElement('div'); e.className='m-btn empty'; sec.appendChild(e); }
+        for (var j=row.length; j<cols; j++) { var e=document.createElement('div'); e.className='m-btn empty'; sec.appendChild(e); }
         menuBody.appendChild(sec);
       });
     }
@@ -1414,13 +1420,13 @@ function initMap() {
         return b;
       });
       var rows = [];
-      for (var i=0; i<btns.length; i+=4) rows.push(btns.slice(i,i+4));
+      for (var i=0; i<btns.length; i+=cols) rows.push(btns.slice(i,i+cols));
       rows.forEach(function(row, ri) {
         var sec = document.createElement('div');
         sec.className = 'menu-section' + (ri===0 ? ' sep' : '');
         if (ri > 0) sec.style.paddingTop = '0';
         row.forEach(function(b){ sec.appendChild(b); });
-        for (var j=row.length; j<4; j++) { var e=document.createElement('div'); e.className='m-btn empty'; sec.appendChild(e); }
+        for (var j=row.length; j<cols; j++) { var e=document.createElement('div'); e.className='m-btn empty'; sec.appendChild(e); }
         menuBody.appendChild(sec);
       });
     }
@@ -1490,6 +1496,7 @@ function initMap() {
   mLinkRow2.appendChild(mFerryBtn);
 
   mRender();
+  window.addEventListener('orientationchange', function(){ setTimeout(mRender, 100); });
   menuWrap.appendChild(menuTop);
   menuWrap.appendChild(menuBody);
   menuWrap.appendChild(mLinkRow);
