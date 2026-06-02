@@ -931,6 +931,10 @@ function initMap() {
   // doGetから注入された相互リンクパラメータを優先チェック
   var fromLink = typeof _xLat !== 'undefined';
   var isFirstCrossLink = fromLink;
+  if (isFirstCrossLink) {
+    var _mParam = new URLSearchParams(location.search).get('m');
+    history.replaceState(null, '', location.pathname + (_mParam ? '?m=' + encodeURIComponent(_mParam) : ''));
+  }
 
   var savedState = isFirstCrossLink ? null : loadMapState();
   var initialLat = isFirstCrossLink ? _xLat : (savedState ? savedState.lat : 36.5);
