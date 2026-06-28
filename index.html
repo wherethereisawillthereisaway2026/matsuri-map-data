@@ -1632,7 +1632,8 @@ function createMarkerForPoint(p) {
     var rowIdx  = p.rowIndex;
     var isFESDB = !p.source;
 
-    var extUrlsHtml = memoUrls.map(function(u){
+    var dateVal = cleanDate.replace(/'/g, "&#39;");
+    var extUrlsHtml = memoUrls.concat(extractedUrls).map(function(u){
       return "<div class='ext-url-row' style='display:flex;gap:4px;margin-bottom:3px;'>"
         + "<input type='text' class='ext-url-input' value='" + u.replace(/'/g,"&#39;") + "' placeholder='https://...' style='flex:1;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:12px;box-sizing:border-box;'>"
         + "<button onclick='this.parentElement.remove()' style='padding:2px 8px;background:#fff;color:#ea4335;border:1px solid #ea4335;border-radius:4px;cursor:pointer;font-size:11px;'>✕</button>"
@@ -1675,6 +1676,9 @@ function createMarkerForPoint(p) {
       + "</div>"
       + (isMaster
           ? "<div id='memo-area-" + rowIdx + "' style='display:none;margin-top:4px;'>"
+            + (isFESDB
+              ? "<input type='text' id='date-" + rowIdx + "' placeholder='日付・詳細' value=\"" + dateVal + "\" style='width:100%;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:12px;box-sizing:border-box;margin-bottom:4px;'>"
+              : "")
             + "<input type='text' id='url-" + rowIdx + "' placeholder='公式URL' value=\"" + urlVal + "\" style='width:100%;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:12px;box-sizing:border-box;margin-bottom:4px;'>"
             + "<textarea id='memo-" + rowIdx + "' rows='2' style='width:100%;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:12px;box-sizing:border-box;resize:vertical;'>" + memoVal + "</textarea>"
             + "<div style='font-size:11px;color:#888;margin:4px 0 2px;'>🔗 外部リンク</div>"
@@ -1885,6 +1889,7 @@ function addExtUrlInput(rowIdx) {
 function saveMemo(rowIdx, source) {
   var ta = document.getElementById('memo-' + rowIdx);
   var urlInput = document.getElementById('url-' + rowIdx);
+  var dateInput = document.getElementById('date-' + rowIdx);
   var btn = document.getElementById('savememo-btn-' + rowIdx);
   if (!ta) return;
   var memoText = ta.value.trim();
@@ -1898,12 +1903,20 @@ function saveMemo(rowIdx, source) {
   }
   var memo = memoText + (extUrls.length ? (memoText ? '\n' : '') + extUrls.join('\n') : '');
   var url = urlInput ? urlInput.value.trim() : '';
+  var dateText = dateInput ? dateInput.value.trim() : null;
   var action = (source === 'OB') ? 'updateMemoOB' : 'updateMemoAndUrl';
+  var payload = {action: action, rowIndex: rowIdx, memo: memo, url: url};
+  if (dateText !== null) payload.date = dateText;
   if (btn) { btn.textContent = '保存中...'; btn.disabled = true; }
-  _gasPost({action: action, rowIndex: rowIdx, memo: memo, url: url})
+  _gasPost(payload)
     .then(function(res) {
       if (res.ok) {
-        allData.forEach(function(p) { if (p.rowIndex === rowIdx && (p.source||'') === (source||'') ) { p.memo = memo; p.officialUrl = url; } });
+        allData.forEach(function(p) {
+          if (p.rowIndex === rowIdx && (p.source||'') === (source||'')) {
+            p.memo = memo; p.officialUrl = url;
+            if (dateText !== null) p.date = dateText;
+          }
+        });
         saveDataCache(allData);
         if (btn) {
           btn.textContent = '✓ 保存しました';
