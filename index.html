@@ -194,6 +194,7 @@ var GAS_URL    = 'https://script.google.com/macros/s/AKfycbw0HVTw6Ztf-CSv_rJ7Tu4
 var SH_MAP_URL    = 'https://wherethereisawillthereisaway2026.github.io/shakuhachi-map-data/';
 var FOODS_MAP_URL = 'https://wherethereisawillthereisaway2026.github.io/foods-map-data/';
 var FERRY_MAP_URL = 'https://wherethereisawillthereisaway2026.github.io/car-ferry-map/';
+var LIVECAM_MAP_URL = 'https://wherethereisawillthereisaway2026.github.io/livecam-map-data/';
 function _gasPost(payload) {
   return fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) }).then(function(r){ return r.json(); });
 }
@@ -671,10 +672,15 @@ function buildPanel() {
   linkRow2.appendChild(fesActiveBtn);
   linkRow2.appendChild(foodsBtn);
   var ferryBtn = document.createElement('button');
-  ferryBtn.textContent = '⚓フェリー';
+  ferryBtn.textContent = '⚓フェリ';
   ferryBtn.style.cssText = 'flex:1;padding:6px;background:#fff;color:#1a73e8;border:1.5px solid #1a73e8;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;';
   ferryBtn.addEventListener('click', function(){ openMapLink(FERRY_MAP_URL); });
   linkRow2.appendChild(ferryBtn);
+  var liveBtn = document.createElement('button');
+  liveBtn.textContent = '📹ライブ';
+  liveBtn.style.cssText = 'flex:1;padding:6px;background:#fff;color:#1a73e8;border:1.5px solid #1a73e8;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;';
+  liveBtn.addEventListener('click', function(){ openMapLink(LIVECAM_MAP_URL); });
+  linkRow2.appendChild(liveBtn);
   container.appendChild(linkRow2);
 
   return container;
@@ -1493,10 +1499,15 @@ function initMap() {
   mLinkRow2.appendChild(mFesActiveBtn);
   mLinkRow2.appendChild(mFoodsBtn);
   var mFerryBtn = document.createElement('button');
-  mFerryBtn.textContent = '⚓フェリー';
+  mFerryBtn.textContent = '⚓フェリ';
   mFerryBtn.style.cssText = 'flex:1;padding:7px;background:#fff;color:#1a73e8;border:1.5px solid #1a73e8;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;';
   mFerryBtn.addEventListener('click', function(){ openMapLink(FERRY_MAP_URL); });
   mLinkRow2.appendChild(mFerryBtn);
+  var mLiveBtn = document.createElement('button');
+  mLiveBtn.textContent = '📹ライブ';
+  mLiveBtn.style.cssText = 'flex:1;padding:7px;background:#fff;color:#1a73e8;border:1.5px solid #1a73e8;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;';
+  mLiveBtn.addEventListener('click', function(){ openMapLink(LIVECAM_MAP_URL); });
+  mLinkRow2.appendChild(mLiveBtn);
 
   mRender();
   window.addEventListener('orientationchange', function(){ setTimeout(mRender, 100); });
