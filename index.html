@@ -279,7 +279,9 @@ var HIS_CATS = [
   {code:40,label:'♨️ 温泉'},
   {code:32,label:'🏘️ 伝統'},
   {code:33,label:'🏚️ 廃墟'},
-  {code:34,label:'📽️ 映画'}
+  {code:34,label:'📽️ 映画'},
+  {code:35,label:'酒蔵'},
+  {code:36,label:'焼酎'}
 ];
 var SAT_CATS = [
   {code:41,label:'📸 撮影'},
@@ -290,6 +292,19 @@ var SAT_CATS = [
   {code:44,label:'⭐ Wish'},
   {code:45,label:'⛔️ 禁止'}
 ];
+
+// 酒蔵・焼酎のアイコン（ICOOON MONO 徳利とおちょこ/お酒のフリーアイコン、商用可・クレジット不要）
+var CAT_ICONS = {
+  35:'<path d="M212.901,125.509c-11.579-15.721-12.58-36.852-2.538-53.586l31.058-51.77c2.469-4.116,2.534-9.229,0.17-13.406 C239.232,2.578,234.81,0,230.017,0h-78.904H72.208c-4.788,0-9.21,2.578-11.574,6.746c-2.36,4.177-2.294,9.29,0.175,13.406 l31.058,51.77c10.042,16.735,9.041,37.866-2.539,53.586l-29.494,46.588c-14.694,23.219-22.498,50.135-22.498,77.62v207.857 c0,30.061,24.368,54.426,54.426,54.426h118.706c30.058,0,54.426-24.365,54.426-54.426V249.717c0-27.484-7.804-54.4-22.499-77.62 L212.901,125.509z"/><path d="M286.929,361.244v25.597c0,35.62,19.838,66.599,49.07,82.505v28.427H425.6v-28.427 c29.228-15.906,49.065-46.885,49.065-82.505v-25.597H286.929z"/>',
+  36:'<path d="M307.313,125.432V30.354C307.304,13.576,293.71,0,276.949,0h-44.138c-8.332-0.01-16.032,3.41-21.483,8.89 c-5.479,5.442-8.899,13.132-8.89,21.465v96.155c-34.908,16.835-58.998,52.47-59.027,93.813v241.946 c0.019,27.492,22.286,49.712,49.75,49.732h125.698c27.492-0.01,49.73-22.268,49.73-49.732V220.322 C368.57,178.073,343.44,141.795,307.313,125.432z M275.92,31.394v34.634h-42.088V31.394H275.92z M337.205,462.268 c-0.018,10.118-8.219,18.309-18.346,18.338H193.161c-10.108-0.029-18.337-8.239-18.357-18.338V220.322 c-0.028-31.686,20.294-58.659,48.56-68.654l10.467-3.694V78.46h42.088v69.051l10.874,3.524c29.23,9.456,50.43,36.882,50.411,69.287 V462.268z"/><rect x="208.909" y="279.15" width="94.191" height="115.116"/>'
+};
+function catIconSvg(code) {
+  return '<svg viewBox="0 0 512 512" width="1.1em" height="1.1em" fill="currentColor" style="vertical-align:-0.15em">' + CAT_ICONS[code] + '</svg>';
+}
+function setCatLabel(el, cat) {
+  if (CAT_ICONS[cat.code]) el.innerHTML = catIconSvg(cat.code) + ' ' + cat.label;
+  else el.textContent = cat.label;
+}
 
 var iconCache = {};
 var CAT_DEFAULT_MONTHS = {
@@ -307,7 +322,7 @@ var MONTH_COLORS = {
 var CAT_COLORS = {
   99:'#9E9E9E',
   10:'#E91E63',11:'#8B7355',12:'#FFD700',13:'#FF6347',14:'#87CEEB',15:'#4169E1',16:'#FF8C00',17:'#1E90FF',18:'#228B22',19:'#8B4513',20:'#4682B4',21:'#191970',22:'#FFD700',23:'#000080',24:'#9966CC',
-  30:'#8B4513',31:'#8B4513',32:'#D2B48C',33:'#A9A9A9',34:'#DC143C',40:'#FF6347',
+  30:'#8B4513',31:'#8B4513',32:'#D2B48C',33:'#A9A9A9',34:'#DC143C',35:'#00796B',36:'#6A1B9A',40:'#FF6347',
   41:'#FF69B4',42:'#FF6600',43:'#78909C',44:'#00BCD4',45:'#D32F2F',46:'#E91E63',47:'#1565C0',
   61:'#C0392B',62:'#FF85AB',63:'#FF6B9D',64:'#8B5CF6',65:'#6366F1',66:'#F59E0B',67:'#DC2626',68:'#F97316',69:'#EAB308',70:'#A5D8FF',71:'#FDE68A',72:'#EF4444',73:'#84CC16',74:'#60A5FA',75:'#F472B6',76:'#7C3AED',77:'#A78BFA',78:'#67E8F9',79:'#FB923C',80:'#B45309',81:'#94A3B8',82:'#E879F9'
 };
@@ -340,6 +355,11 @@ function getMarkerIcon(code) {
     svg = '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">'
       + '<polygon points="20,3 24,14 36,14 27,21 30,33 20,26 10,33 13,21 4,14 16,14" fill="' + color + '" stroke="white" stroke-width="1.5"/>'
       + '<text x="20" y="24" font-size="16" font-weight="bold" fill="white" text-anchor="middle">' + label + '</text>'
+      + '</svg>';
+  } else if (CAT_ICONS[code]) {
+    svg = '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">'
+      + '<circle cx="20" cy="20" r="18" fill="' + color + '" stroke="white" stroke-width="2"/>'
+      + '<g transform="translate(10,10) scale(0.0390625)" fill="white">' + CAT_ICONS[code] + '</g>'
       + '</svg>';
   } else {
     var whiteBg = (code === 45 || code === 46);
@@ -545,7 +565,7 @@ function buildPanel() {
       var btns = cats.map(function(cat) {
         var b = document.createElement('div');
         b.className = 'fp-btn' + (activeSet.has(cat.code) ? ' on ' + cls : '');
-        b.textContent = cat.label;
+        setCatLabel(b, cat);
         catBtnRefs[cat.code] = b;
         b.addEventListener('click', function() {
           if (activeSet.has(cat.code)) { activeSet.delete(cat.code); b.classList.remove('on',cls,'month-hl'); }
@@ -586,7 +606,7 @@ function buildPanel() {
       var btns = cats.map(function(cat) {
         var b = document.createElement('div');
         b.className = 'fp-btn' + (activeSet.has(cat.code) ? ' on ' + cls : '');
-        b.textContent = cat.label;
+        setCatLabel(b, cat);
         catBtnRefs[cat.code] = b;
         b.addEventListener('click', function() {
           if (activeSet.has(cat.code)) { activeSet.delete(cat.code); b.classList.remove('on',cls,'month-hl'); }
@@ -1030,13 +1050,8 @@ function initMap() {
     }, function(){ alert('位置情報を取得できませんでした'); });
   }
 
-  if (!loadFilterState()) {
-    for (var i = 1; i <= 12; i++) activeMonths.add(i);
-    NAT_CATS.forEach(function(c){ activeNat.add(c.code); });
-    HIS_CATS.forEach(function(c){ activeHis.add(c.code); });
-    SAT_CATS.forEach(function(c){ activeSat.add(c.code); });
-    HANA_CATS.forEach(function(c){ activeHana.add(c.code); });
-  }
+  // 初回は全解除で開始（同じタブ内の再読み込みは前回の選択を復元）
+  loadFilterState();
   document.body.appendChild(buildPanel());
 
   // スマホ用ボトムシート
@@ -1216,7 +1231,7 @@ function initMap() {
           cats.forEach(function(cat) {
             var btn = document.createElement('div');
             btn.className = 'bs-btn' + (activeSet.has(cat.code) ? ' on ' + cls : '');
-            btn.textContent = cat.label;
+            setCatLabel(btn, cat);
             btn.addEventListener('click', function() {
               if (activeSet.has(cat.code)) {
                 activeSet.delete(cat.code); btn.classList.remove('on',cls);
@@ -1377,7 +1392,7 @@ function initMap() {
       var btns = cats.map(function(cat) {
         var b = document.createElement('div');
         b.className = 'm-btn' + (activeSet.has(cat.code) ? ' on ' + cls : '');
-        b.textContent = cat.label;
+        setCatLabel(b, cat);
         catBtnRefs[cat.code] = b;
         b.addEventListener('click', function() {
           if (activeSet.has(cat.code)) { activeSet.delete(cat.code); b.classList.remove('on',cls,'month-hl'); }
@@ -1419,7 +1434,7 @@ function initMap() {
       var btns = cats.map(function(cat) {
         var b = document.createElement('div');
         b.className = 'm-btn' + (activeSet.has(cat.code) ? ' on ' + cls : '');
-        b.textContent = cat.label;
+        setCatLabel(b, cat);
         catBtnRefs[cat.code] = b;
         b.addEventListener('click', function() {
           if (activeSet.has(cat.code)) { activeSet.delete(cat.code); b.classList.remove('on',cls,'month-hl'); }
@@ -1528,17 +1543,21 @@ function initMap() {
   // GitHubから最新データ取得（GASより高速）→ 失敗時はGASフォールバック
   var _GH_DATA_URL     = 'https://raw.githubusercontent.com/wherethereisawillthereisaway2026/matsuri-map-data/main/data.json';
   var _FES_SCHED_URL   = 'https://raw.githubusercontent.com/wherethereisawillthereisaway2026/matsuri-map-data/main/fes_schedule.json';
+  var _SAKE_URL        = 'https://raw.githubusercontent.com/wherethereisawillthereisaway2026/matsuri-map-data/main/sake_breweries.json';
 
   Promise.all([
     fetch(_GH_DATA_URL   + '?t=' + Date.now()).then(function(r){ if(!r.ok) throw new Error('main '+r.status); return r.json(); }),
     fetch(_FES_SCHED_URL + '?t=' + Date.now()).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; }),
+    fetch(_SAKE_URL      + '?t=' + Date.now()).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; }),
   ]).then(function(results) {
     var mainData = results[0];
     var fesData  = results[1];
+    var sakeData = results[2];
     if (!mainData || mainData.length === 0) throw new Error('empty');
     if (isCacheWriteProtected()) return; // 書き込み直後はCDNで上書きしない
     var fesItems = fesData.map(function(item, idx){ item._readonly = true; if (item.rowIndex === undefined || item.rowIndex === null) item.rowIndex = 'fes_' + idx; return item; });
-    var merged = mainData.concat(fesItems);
+    var sakeItems = sakeData.map(function(item, idx){ item._readonly = true; item.rowIndex = 'sake_' + idx; return item; });
+    var merged = mainData.concat(fesItems).concat(sakeItems);
     saveDataCache(merged);
     setupMarkers(merged, true);
   }).catch(function() { console.error('CDNからのデータ取得失敗'); });
