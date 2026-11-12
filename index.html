@@ -196,7 +196,23 @@ var FOODS_MAP_URL = 'https://wherethereisawillthereisaway2026.github.io/foods-ma
 var FERRY_MAP_URL = 'https://wherethereisawillthereisaway2026.github.io/car-ferry-map/';
 var LIVECAM_MAP_URL = 'https://wherethereisawillthereisaway2026.github.io/livecam-map-data/';
 function _gasPost(payload) {
-  return fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) }).then(function(r){ return r.json(); });
+  return fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) }).then(function(r){ return r.json(); })
+    .then(function(res) { _warnExportError(res); return res; });
+}
+
+// GitHubへの書き出し失敗を知らせる（10分に1回まで）
+var _exportWarnAt = 0;
+function _warnExportError(res) {
+  if (!res || !res.exportError) return;
+  if (Date.now() - _exportWarnAt < 10 * 60 * 1000) return;
+  _exportWarnAt = Date.now();
+  alert('シートには保存しましたが、地図データ(GitHub)への書き出しに失敗しています。\n再読み込み後や他の端末には反映されません。\n\n' + res.exportError);
+}
+
+// 行ずれ防止用: 行番号の地点名をGASへ一緒に送る（GAS側でシートの名称と照合）
+function _nameOfRow(rowIdx, source) {
+  var p = allData.find(function(p){ return p.rowIndex === rowIdx && (p.source||'') === (source||''); });
+  return p ? p.name : undefined;
 }
 // URLSearchParams で相互リンクパラメータを読み込む
 (function() {
@@ -1845,12 +1861,15 @@ function saveCategory(rowIdx) {
   if (!sel || !sel.value) return;
   var newCode = parseInt(sel.value, 10);
   if (msg) msg.textContent = '保存中...';
-  _gasPost({action: 'updateCategory', rowIndex: rowIdx, newCode: newCode})
+  _gasPost({action: 'updateCategory', rowIndex: rowIdx, newCode: newCode, expectName: _nameOfRow(rowIdx, '')})
     .then(function(res) {
       if (res.ok) {
         allData.forEach(function(pd) { if (pd.rowIndex === rowIdx) pd.category = newCode; });
         infoWindow.close();
         renderMarkers();
+      } else {
+        if (msg) msg.textContent = '✕ 失敗';
+        alert('保存に失敗しました: ' + (res.msg || ''));
       }
     })
     .catch(function(e){ if (msg) msg.textContent = '✕ エラー'; alert('エラー: ' + e); });
@@ -1889,7 +1908,7 @@ function saveLocation(rowIdx) {
   if (isNaN(lat) || isNaN(lng)) { alert('緯度・経度が無効です'); return; }
   var placeId = pidInput ? pidInput.value.trim() : '';
   if (btn) { btn.textContent = '保存中...'; btn.disabled = true; }
-  _gasPost({action: 'updateLocation', rowIndex: rowIdx, placeId: placeId, lat: lat, lng: lng})
+  _gasPost({action: 'updateLocation', rowIndex: rowIdx, placeId: placeId, lat: lat, lng: lng, expectName: _nameOfRow(rowIdx, '')})
     .then(function(res) {
       if (res.ok) {
         allData.forEach(function(p) {
@@ -1939,7 +1958,7 @@ function saveMemo(rowIdx, source) {
   var url = urlInput ? urlInput.value.trim() : '';
   var dateText = dateInput ? dateInput.value.trim() : null;
   var action = (source === 'OB') ? 'updateMemoOB' : 'updateMemoAndUrl';
-  var payload = {action: action, rowIndex: rowIdx, memo: memo, url: url};
+  var payload = {action: action, rowIndex: rowIdx, memo: memo, url: url, expectName: _nameOfRow(rowIdx, source)};
   if (dateText !== null) payload.date = dateText;
   if (btn) { btn.textContent = '保存中...'; btn.disabled = true; }
   _gasPost(payload)
@@ -1956,6 +1975,9 @@ function saveMemo(rowIdx, source) {
           btn.textContent = '✓ 保存しました';
           setTimeout(function() { btn.textContent = '保存'; btn.disabled = false; }, 1500);
         }
+      } else {
+        if (btn) { btn.textContent = '保存'; btn.disabled = false; }
+        alert('保存に失敗しました: ' + (res.msg || ''));
       }
     })
     .catch(function(e){ if (btn) { btn.textContent = '❌ エラー'; btn.disabled = false; } });
@@ -1978,6 +2000,7 @@ function _executeDelete(job) {
   var source = job.source;
   var action = source === 'OB' ? 'deleteRowOB' : 'deleteRow';
   var payload = {action: action, rowIndex: rowIdx};
+  if (job.item) payload.expectName = job.item.name;  // 行ずれ防止
   if (source === 'OB' && job.item && job.item.placeId) payload.placeId = job.item.placeId;
   _gasPost(payload)
     .then(function(res) {
