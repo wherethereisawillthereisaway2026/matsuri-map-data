@@ -1865,6 +1865,7 @@ function saveCategory(rowIdx) {
     .then(function(res) {
       if (res.ok) {
         allData.forEach(function(pd) { if (pd.rowIndex === rowIdx) pd.category = newCode; });
+        saveDataCache(allData, true);
         infoWindow.close();
         renderMarkers();
       } else {
