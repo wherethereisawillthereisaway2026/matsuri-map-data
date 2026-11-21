@@ -1585,7 +1585,8 @@ function getMarkerKey(p) {
 
 function getMapUrl(p) {
   if (p.placeId) {
-    return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.name) + '&query_place_id=' + p.placeId;
+    // Place ID で施設を開く。ID が古く見つからないときだけ query（名前＋住所）で検索される
+    return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.name + (p.adr ? ' ' + p.adr : '')) + '&query_place_id=' + p.placeId;
   }
   // 酒蔵・焼酎は placeId が無いので、座標ではなく蔵名＋県で検索して蔵そのものを開く
   if (CAT_ICONS[p.category]) {
